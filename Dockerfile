@@ -68,7 +68,8 @@ COPY --from=build --chown=nextjs:nodejs /app/.next         ./.next
 COPY --from=build --chown=nextjs:nodejs /app/public        ./public
 COPY --from=build --chown=nextjs:nodejs /app/package.json  ./package.json
 COPY --from=build --chown=nextjs:nodejs /app/next.config.ts ./next.config.ts
-COPY --from=build --chown=nextjs:nodejs /app/prisma        ./prisma
+COPY --from=build --chown=nextjs:nodejs /app/prisma            ./prisma
+COPY --from=build --chown=nextjs:nodejs /app/prisma.config.ts  ./prisma.config.ts
 COPY --from=build --chown=nextjs:nodejs /app/node_modules  ./node_modules
 
 # Persisted volume for SQLite + uploads
