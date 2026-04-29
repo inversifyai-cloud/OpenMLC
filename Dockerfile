@@ -12,10 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 build-essential ca-certificates openssl \
  && rm -rf /var/lib/apt/lists/*
 
-# Skip prisma generate during install (it runs once we have the schema)
-ENV PRISMA_SKIP_POSTINSTALL_GENERATE=1
+# Skip postinstall (prisma generate) — we'll run it explicitly in the build stage
+# once the schema is on disk.
 COPY package.json package-lock.json* ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci --no-audit --no-fund --ignore-scripts
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 2 — build: compile Next.js standalone bundle + generate Prisma client
