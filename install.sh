@@ -127,7 +127,7 @@ step "wrote .env (mode 0600)"
 
 # ─── Pull + start ─────────────────────────────────────────────────────────────
 step "pulling image (first run can take a minute)…"
-docker compose pull >/dev/null 2>&1 || fail "image pull failed. is your token valid + does your account have access to the package?"
+docker compose pull 2>&1 || fail "image pull failed — see error above."
 
 step "starting openmlc…"
 docker compose up -d >/dev/null 2>&1 || fail "docker compose up failed. run \`docker compose logs\` in $INSTALL_DIR to see why."
