@@ -15,6 +15,9 @@
 services:
   openmlc:
     image: ghcr.io/inversifyai-cloud/openmlc:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: openmlc
     restart: unless-stopped
     ports:
