@@ -15,7 +15,6 @@ function fmtTokens(n: number): string {
   return String(n);
 }
 
-// Generate last N days as YYYY-MM-DD strings (descending → ascending)
 function lastNDays(n: number): string[] {
   const days: string[] = [];
   const today = new Date();
@@ -32,13 +31,11 @@ export default async function UsagePage() {
   if (!session.profileId) redirect("/profiles");
   const profileId = session.profileId;
 
-  // Current month bounds
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
     .toISOString()
     .slice(0, 10);
 
-  // All usage rows for this month
   const monthRows = await db.usageDaily.findMany({
     where: { profileId, day: { gte: monthStart } },
   });
@@ -48,7 +45,6 @@ export default async function UsagePage() {
   const monthInputTokens = monthRows.reduce((s, r) => s + r.inputTokens, 0);
   const monthOutputTokens = monthRows.reduce((s, r) => s + r.outputTokens, 0);
 
-  // Last-30-days for chart
   const thirtyDaysStart = (() => {
     const d = new Date();
     d.setDate(d.getDate() - 29);
@@ -59,7 +55,6 @@ export default async function UsagePage() {
     where: { profileId, day: { gte: thirtyDaysStart } },
   });
 
-  // Build day → costUsd map
   const dayMap = new Map<string, number>();
   for (const r of chartRows) {
     dayMap.set(r.day, (dayMap.get(r.day) ?? 0) + r.costUsd);
@@ -68,7 +63,6 @@ export default async function UsagePage() {
   const dayCosts = days30.map((day) => ({ day, cost: dayMap.get(day) ?? 0 }));
   const maxCost = Math.max(...dayCosts.map((d) => d.cost), 0.0001);
 
-  // Per-model table for last 30 days, sorted by cost desc
   const modelMap = new Map<
     string,
     { modelId: string; providerId: string; cost: number; requests: number; inputTokens: number; outputTokens: number; lastDay: string }
@@ -95,18 +89,16 @@ export default async function UsagePage() {
   }
   const modelRows = Array.from(modelMap.values()).sort((a, b) => b.cost - a.cost);
 
-  // Budget caps
   const caps = await db.budgetCap.findMany({ where: { profileId }, orderBy: { createdAt: "desc" } });
 
-  // Chart dimensions
   const CHART_W = 600;
   const CHART_H = 80;
-  const BAR_W = Math.floor((CHART_W - 30) / 30) - 1; // gap of 1px
+  const BAR_W = Math.floor((CHART_W - 30) / 30) - 1;
   const BAR_MAX_H = CHART_H - 4;
 
   return (
     <div style={{ maxWidth: 760 }}>
-      {/* Breadcrumb */}
+
       <span
         style={{
           fontFamily: "var(--font-mono)",
@@ -131,7 +123,6 @@ export default async function UsagePage() {
         cost &amp; usage
       </h1>
 
-      {/* ── Headline numbers ───────────────────────────────────────── */}
       <div
         style={{
           display: "grid",
@@ -182,7 +173,6 @@ export default async function UsagePage() {
         ))}
       </div>
 
-      {/* ── 30-day stacked-bar chart (inline SVG) ─────────────────── */}
       <div
         style={{
           border: "1px solid var(--stroke-1)",
@@ -245,7 +235,6 @@ export default async function UsagePage() {
         </div>
       </div>
 
-      {/* ── Per-model table ────────────────────────────────────────── */}
       <div
         style={{
           border: "1px solid var(--stroke-1)",
@@ -340,7 +329,6 @@ export default async function UsagePage() {
         )}
       </div>
 
-      {/* ── Budget caps ────────────────────────────────────────────── */}
       <div
         style={{
           border: "1px solid var(--stroke-1)",

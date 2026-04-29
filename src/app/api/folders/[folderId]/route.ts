@@ -36,7 +36,7 @@ export async function DELETE(_req: Request, ctx: RouteCtx) {
   const { folderId } = await ctx.params;
   const auth = await authOwnFolder(folderId);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  // un-assign conversations in this folder before deleting
+
   await db.conversation.updateMany({ where: { folderId }, data: { folderId: null } });
   await db.folder.delete({ where: { id: folderId } });
   return NextResponse.json({ ok: true });

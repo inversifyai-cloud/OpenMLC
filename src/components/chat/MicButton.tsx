@@ -126,7 +126,6 @@ export function MicButton({ onTranscript, disabled }: MicButtonProps) {
     }
   }, [recording, stopRecording, startRecording]);
 
-  // cleanup on unmount
   useEffect(() => {
     return () => {
       stopRecording();

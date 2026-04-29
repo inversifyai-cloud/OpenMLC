@@ -37,7 +37,6 @@ export default async function SharePage({ params }: Props) {
 
   if (share.expiresAt && new Date(share.expiresAt) < new Date()) notFound();
 
-  // increment viewCount
   await db.conversationShare.update({
     where: { slug },
     data: { viewCount: { increment: 1 } },

@@ -1,4 +1,4 @@
-/** Compact relative time — "2m", "3h", "yesterday", "Apr 28". */
+
 export function relativeTime(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   const diffMs = Date.now() - d.getTime();

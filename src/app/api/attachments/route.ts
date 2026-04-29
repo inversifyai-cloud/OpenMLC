@@ -4,14 +4,14 @@ import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import { extractText, isImage } from "@/lib/attachments";
 
-const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
+const MAX_SIZE = 20 * 1024 * 1024;
 
 const ALLOWED_TYPES = new Set([
-  // images
+
   "image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/bmp",
-  // documents
+
   "application/pdf",
-  // text / code
+
   "text/plain", "text/markdown", "text/html", "text/csv",
   "text/javascript", "text/typescript", "application/json",
   "application/javascript",

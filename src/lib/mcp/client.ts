@@ -1,14 +1,10 @@
-/**
- * MCP client — connects to stdio MCP servers and exposes their tools as AI SDK tools.
- * One client is created per server per request (no persistent connections in serverless).
- */
+
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { tool } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type DynamicTool = ReturnType<typeof tool<any, any>>;
 
 export type McpToolBundle = {
@@ -23,7 +19,6 @@ type McpToolSchema = {
   description?: string;
 };
 
-// Build a zod schema from a JSON Schema object (best-effort, covers common cases)
 function jsonSchemaToZod(schema: McpToolSchema): z.ZodObject<Record<string, z.ZodTypeAny>> {
   const props = schema.properties ?? {};
   const required = new Set(schema.required ?? []);
@@ -65,7 +60,7 @@ export async function buildMcpTools(profileId: string): Promise<McpToolBundle> {
   if (!servers.length) return { tools: {}, cleanup: async () => {} };
 
   const clients: Client[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const tools: Record<string, DynamicTool> = {};
 
   for (const server of servers) {
@@ -95,7 +90,7 @@ export async function buildMcpTools(profileId: string): Promise<McpToolBundle> {
       for (const mcpTool of mcpTools) {
         const toolName = `mcp__${server.name.replace(/[^a-z0-9]/gi, "_")}__${mcpTool.name}`;
         const inputSchema = mcpTool.inputSchema as McpToolSchema | undefined;
-        // Use passthrough() so empty-schema tools don't trip on strict typing
+
         const zodSchema: z.ZodObject<Record<string, z.ZodTypeAny>> =
           inputSchema && Object.keys(inputSchema.properties ?? {}).length > 0
             ? jsonSchemaToZod(inputSchema)
@@ -104,11 +99,10 @@ export async function buildMcpTools(profileId: string): Promise<McpToolBundle> {
         const capturedClient = client;
         const capturedToolName = mcpTool.name;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         tools[toolName] = tool<any, any>({
           description: mcpTool.description ?? `MCP tool: ${mcpTool.name} from ${server.name}`,
           inputSchema: zodSchema,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           execute: async (input: any) => {
             try {
               const result = await capturedClient.callTool({

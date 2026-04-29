@@ -1,6 +1,5 @@
-/* ── M8.4b — Artifacts panel & inline card ───────────────────────── */
 
-/* Pane slide-in from right */
+
 .artifacts-pane {
   position: fixed;
   top: 0;
@@ -89,7 +88,6 @@
   color: var(--fg-1, #e8e8e8);
 }
 
-/* Tabs */
 .artifacts-pane__tabs {
   display: flex;
   gap: 0;
@@ -118,7 +116,6 @@
   border-bottom-color: var(--fg-accent, #4ade80);
 }
 
-/* Content area */
 .artifacts-pane__content {
   flex: 1;
   overflow: hidden;
@@ -167,7 +164,6 @@
   box-sizing: border-box;
 }
 
-/* History tab */
 .artifacts-history {
   padding: 12px;
   overflow: auto;
@@ -221,7 +217,6 @@
   color: var(--fg-3, #888);
 }
 
-/* ── Inline artifact card ─────────────────────────────────────────── */
 .artifact-inline {
   display: inline-flex;
   align-items: center;

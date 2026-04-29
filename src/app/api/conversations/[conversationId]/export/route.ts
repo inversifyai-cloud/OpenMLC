@@ -37,7 +37,6 @@ export async function GET(req: Request, ctx: RouteCtx) {
     );
   }
 
-  // markdown
   const lines: string[] = [
     `# ${conv.title || "Untitled Conversation"}`,
     ``,

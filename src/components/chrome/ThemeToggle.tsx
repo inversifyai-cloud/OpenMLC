@@ -26,8 +26,6 @@ export function ThemeToggle({ className }: { className?: string }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Render a stable placeholder until mounted to avoid SSR/CSR mismatch
-  // (next-themes resolves the actual theme client-side after the inline script runs).
   const isDark = mounted && resolvedTheme === "dark";
   const next = isDark ? "light" : "dark";
 

@@ -3,7 +3,7 @@ import type { SwarmEvent } from "./types";
 
 export class StreamBus {
   private emitter = new EventEmitter();
-  private buffer: SwarmEvent[] = [];   // replay for late subscribers
+  private buffer: SwarmEvent[] = [];
   private closed = false;
 
   emit(event: SwarmEvent) {
@@ -28,7 +28,7 @@ export class StreamBus {
 
     return new ReadableStream({
       start: (ctrl) => {
-        // Replay buffered events
+
         for (const ev of buffer) {
           ctrl.enqueue(enc.encode(`data: ${JSON.stringify(ev)}\n\n`));
         }
@@ -50,14 +50,13 @@ export class StreamBus {
         };
 
         emitter.on("event", handler);
-        // Note: 'cancel' is the cleanup hook — see below
+
         (ctrl as unknown as { _cleanup?: () => void })._cleanup = () => {
           emitter.off("event", handler);
         };
       },
       cancel: () => {
-        // listener is cleaned up automatically when complete/error fires;
-        // if client disconnects early, we leave the run going (it's persisted)
+
       },
     });
   }

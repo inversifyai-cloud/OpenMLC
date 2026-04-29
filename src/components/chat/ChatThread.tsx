@@ -65,12 +65,10 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
   const reasoningEffortRef = useRef<ReasoningEffort>("off");
   useEffect(() => { reasoningEffortRef.current = reasoningEffort; }, [reasoningEffort]);
 
-  // Hydrate from localStorage on mount.
   useEffect(() => {
     setReasoningEffort(loadReasoningEffort());
   }, []);
 
-  // Persist on change.
   useEffect(() => {
     if (typeof window === "undefined") return;
     try { localStorage.setItem(REASONING_EFFORT_KEY, reasoningEffort); } catch {}
@@ -78,7 +76,6 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
 
   const pendingAttachmentsRef = useRef<string[]>([]);
 
-  // Per-message model map — seeded from DB, updated after each send.
   const [perMsgModel, setPerMsgModel] = useState<Record<string, string>>(() => {
     const out: Record<string, string> = {};
     for (const m of initialMessages) {
@@ -135,7 +132,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
     pendingModelRef.current = null;
     pendingAttachmentsRef.current = [];
     setReasoningEffort("off");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [conversationId]);
 
   useEffect(() => {
@@ -145,7 +142,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ modelId }),
     }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [modelId]);
 
   useEffect(() => {
@@ -154,15 +151,13 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, status, swarm.status]);
 
-  // When swarm completes, inject synthesis as an assistant message.
-  // Do NOT reset — panel stays visible (collapsed) for reference; user dismisses manually.
   const swarmInjectedRef = useRef(false);
   useEffect(() => {
     if (swarm.status !== "complete") {
-      swarmInjectedRef.current = false; // reset flag when swarm restarts
+      swarmInjectedRef.current = false;
       return;
     }
-    if (swarmInjectedRef.current) return; // already injected for this run
+    if (swarmInjectedRef.current) return;
     swarmInjectedRef.current = true;
     const synthesis = swarm.synthesis;
     const runId = swarm.runId;
@@ -176,7 +171,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
         },
       ]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [swarm.status]);
 
   async function handleFileSelect(files: FileList) {
@@ -213,7 +208,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
 
   function handleRemoveAttachment(id: string) {
     setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
-    // fire-and-forget delete (cleanup)
+
     fetch(`/api/attachments/${id}`, { method: "DELETE" }).catch(() => {});
   }
 
@@ -237,13 +232,12 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
     const readyAttachments = pendingAttachments.filter((a) => !a.uploading);
     if (!text && readyAttachments.length === 0) return;
 
-    // Swarm mode: dispatch to agent swarm inline
     if (swarmMode && text) {
-      if (swarm.status !== "idle") return; // already running
+      if (swarm.status !== "idle") return;
       setInput("");
       setPendingAttachments([]);
       setErrorMsg(null);
-      // Optimistically add user message to the thread
+
       setMessages((prev) => [
         ...prev,
         {
@@ -263,7 +257,6 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
     pendingAttachmentsRef.current = readyAttachments.map((a) => a.id);
     pendingModelRef.current = modelIdRef.current;
 
-    // If no text, use attachment filenames as display text
     const displayText = text || readyAttachments.map((a) => a.filename).join(", ");
 
     setInput("");
@@ -313,7 +306,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
               ?.filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
               ?.map((p) => p.text)
               ?.join("") ?? "";
-            // Pull live reasoning tokens from streaming UIMessage parts.
+
             const liveReasoning = m.parts
               ?.filter((p): p is Extract<typeof p, { type: "reasoning" }> =>
                 (p as { type: string }).type === "reasoning"
@@ -327,7 +320,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
                 ?? (isLast && isStreaming && lastIsAssistant ? pendingModelRef.current ?? undefined : undefined)
                 ?? modelId;
             }
-            // Get attachments + persisted reasoning from initial DB load for this message
+
             const dbMessage = initialMessages.find((im) => im.id === m.id);
             const reasoning = liveReasoning || dbMessage?.reasoning || null;
             return (

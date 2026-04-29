@@ -48,7 +48,7 @@ export function SwarmConfigForm({ initial }: { initial: SwarmConfigInitial }) {
 
   function toggleProvider(id: ProviderId, checked: boolean) {
     if (allEnabled) {
-      // All providers shown as checked. User unchecked one → enable all EXCEPT that one.
+
       setProviders(checked ? [] : ALL_PROVIDERS.filter((p) => p.id !== id).map((p) => p.id));
       return;
     }

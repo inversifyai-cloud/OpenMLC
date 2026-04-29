@@ -65,7 +65,7 @@ function AgentItem({ agent, isLast }: AgentItemProps) {
 
   return (
     <div style={{ display: "flex", gap: 0 }}>
-      {/* Rail */}
+
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 20, flexShrink: 0 }}>
         <Dot color={dotColor} pulse={isRunning} />
         {!isLast && (
@@ -73,7 +73,6 @@ function AgentItem({ agent, isLast }: AgentItemProps) {
         )}
       </div>
 
-      {/* Content */}
       <div style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 0 : 10, paddingLeft: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: hasOutput ? "pointer" : "default" }}
           onClick={() => hasOutput && setOpen((v) => !v)}>
@@ -214,7 +213,7 @@ export function SwarmInlineView({ status, plan, agents, synthesis, error, onDism
         </summary>
 
         <div style={{ marginTop: 10, paddingLeft: 2 }}>
-          {/* Plan row */}
+
           {plan && (
             <div style={{ display: "flex", gap: 0, marginBottom: agents.length > 0 ? 0 : 0 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 20, flexShrink: 0 }}>
@@ -234,7 +233,6 @@ export function SwarmInlineView({ status, plan, agents, synthesis, error, onDism
             </div>
           )}
 
-          {/* Agent rows */}
           {agents.map((agent, i) => (
             <AgentItem
               key={agent.id}
@@ -243,7 +241,6 @@ export function SwarmInlineView({ status, plan, agents, synthesis, error, onDism
             />
           ))}
 
-          {/* Synthesis row */}
           {(status === "synthesizing" || status === "complete" || synthesis.length > 0) && (
             <div style={{ display: "flex", gap: 0 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 20, flexShrink: 0 }}>
@@ -267,7 +264,6 @@ export function SwarmInlineView({ status, plan, agents, synthesis, error, onDism
             </div>
           )}
 
-          {/* Error row */}
           {error && (
             <div style={{ display: "flex", gap: 0 }}>
               <div style={{ width: 20, flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "center" }}>

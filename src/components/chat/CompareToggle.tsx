@@ -16,8 +16,6 @@ const PROVIDER_DOT: Record<string, string> = {
 
 const MAX_MODELS = 4;
 
-// ── Hook API ──────────────────────────────────────────────────────────────────
-
 export type UseCompareToggleReturn = {
   active: boolean;
   modelIds: string[];
@@ -31,14 +29,12 @@ export function useCompareToggle(initialModelIds: string[] = []): UseCompareTogg
   return { active, modelIds, setActive, setModelIds };
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 type Props = {
   active: boolean;
   modelIds: string[];
   setActive: (v: boolean) => void;
   setModelIds: (ids: string[]) => void;
-  /** Optional: provide full catalog; falls back to static models */
+
   catalog?: Model[];
 };
 
@@ -48,7 +44,6 @@ export function CompareToggle({ active, modelIds, setActive, setModelIds, catalo
   const [allModels, setAllModels] = useState<Model[]>(catalog ?? STATIC_MODELS);
   const [loading, setLoading] = useState(false);
 
-  // Load full catalog when picker opens
   useEffect(() => {
     if (!pickerOpen || catalog) return;
     if (allModels.length > STATIC_MODELS.length) return;
@@ -100,7 +95,7 @@ export function CompareToggle({ active, modelIds, setActive, setModelIds, catalo
     const next = !active;
     setActive(next);
     if (next && modelIds.length < 2) {
-      // Auto-populate with first 2 text models if none selected
+
       const defaults = textModels.slice(0, 2).map((m) => m.id);
       setModelIds(defaults);
     }
@@ -109,7 +104,7 @@ export function CompareToggle({ active, modelIds, setActive, setModelIds, catalo
 
   return (
     <div className="compare-toggle-root">
-      {/* Toggle button */}
+
       <button
         className={`compare-toggle-btn${active ? " active" : ""}`}
         onClick={handleToggleActive}
@@ -131,7 +126,6 @@ export function CompareToggle({ active, modelIds, setActive, setModelIds, catalo
         compare
       </button>
 
-      {/* Selected model chips + picker toggle */}
       {active && (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <div className="compare-model-chips">
@@ -197,7 +191,6 @@ export function CompareToggle({ active, modelIds, setActive, setModelIds, catalo
             )}
           </div>
 
-          {/* Inline model picker dropdown */}
           {pickerOpen && (
             <div
               style={{

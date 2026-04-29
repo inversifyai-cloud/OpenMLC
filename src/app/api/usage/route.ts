@@ -37,7 +37,6 @@ export async function GET(req: Request) {
     orderBy: { day: "asc" },
   });
 
-  // Aggregate in-memory by the requested dimension
   const agg = new Map<
     string,
     { inputTokens: number; outputTokens: number; costUsd: number; requestCount: number; label: string }

@@ -36,7 +36,6 @@ export async function POST(req: Request) {
 
   const { prompt, modelIds } = parsed.data;
 
-  // Resolve all models and provider keys up front
   const resolved = await Promise.all(
     modelIds.map(async (modelId) => {
       const model = await findModel(modelId, profileId);
@@ -56,7 +55,6 @@ export async function POST(req: Request) {
     })
   );
 
-  // Check for any resolution errors
   for (const r of resolved) {
     if ("error" in r && r.error) {
       return Response.json({ error: r.error }, { status: 400 });
@@ -71,7 +69,6 @@ export async function POST(req: Request) {
         ctrl.enqueue(enc.encode(`data: ${JSON.stringify(data)}\n\n`));
       }
 
-      // Fan out streamText per model in parallel
       await Promise.all(
         resolved.map(async (r) => {
           if ("error" in r && r.error) return;

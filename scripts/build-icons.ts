@@ -1,11 +1,5 @@
 #!/usr/bin/env -S npx tsx
-/**
- * Generates one React component per SVG in public/brand/icons/.
- * Output: src/components/icons/<Name>.tsx + src/components/icons/index.ts
- *
- * Each component renders the SVG inline, strips fixed colors so currentColor
- * can drive it, and accepts size + className.
- */
+
 import { readdirSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, basename, extname } from "node:path";
 

@@ -1,4 +1,4 @@
-/* ── Compare Mode ─────────────────────────────────────────────────────────── */
+
 
 .compare-grid {
   display: flex;
@@ -129,8 +129,6 @@
   font-style: italic;
   padding: 8px 0;
 }
-
-/* ── Compare Toggle ───────────────────────────────────────────────────────── */
 
 .compare-toggle-root {
   display: flex;

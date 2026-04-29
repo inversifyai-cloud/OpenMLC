@@ -1,9 +1,5 @@
 "use client";
 
-// TODO: Wire ArtifactInline into MessageBubble.tsx — left for main agent integration.
-// Import this component and render <ArtifactInline artifact={...} onOpen={...} /> beneath
-// assistant message bubbles that have associated artifacts.
-
 interface ArtifactInlineProps {
   artifact: {
     id: string;

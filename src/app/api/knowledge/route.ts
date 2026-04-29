@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { extractText } from "@/lib/attachments";
 import { triggerFileProcessing } from "@/lib/ai/knowledge-rag";
 
-const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
+const MAX_SIZE = 20 * 1024 * 1024;
 
 const ALLOWED_TYPES = new Set([
   "text/plain",
@@ -85,7 +85,6 @@ export async function POST(req: Request) {
     return Response.json({ error: "unsupported file type" }, { status: 415 });
   }
 
-  // Create the row first so Prisma assigns the cuid; we use it for the on-disk filename.
   const created = await db.knowledgeFile.create({
     data: {
       profileId,
@@ -133,7 +132,6 @@ export async function POST(req: Request) {
     },
   });
 
-  // Fire and forget — do NOT await.
   triggerFileProcessing(updated.id, profileId);
 
   return Response.json({ file: updated });

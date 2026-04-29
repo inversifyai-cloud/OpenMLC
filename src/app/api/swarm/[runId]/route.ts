@@ -26,7 +26,7 @@ export async function GET(
   if (url.searchParams.get("stream") === "1") {
     const bus = getBus(runId);
     if (!bus || bus.isClosed()) {
-      // Completed run — return an immediately-closing stream with no events
+
       const stream = new ReadableStream<Uint8Array>({
         start(c) {
           c.close();
@@ -48,7 +48,6 @@ export async function GET(
     });
   }
 
-  // JSON snapshot
   let plan: unknown = null;
   try {
     if (run.plan) plan = JSON.parse(run.plan);
@@ -82,7 +81,6 @@ export async function GET(
   });
 }
 
-// DELETE — abort/delete a run (only allows DELETE on completed/failed runs to keep things simple)
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ runId: string }> },

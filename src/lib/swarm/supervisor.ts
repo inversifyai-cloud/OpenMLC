@@ -54,7 +54,6 @@ Return a tight, focused plan. Don't over-decompose simple questions.`;
     prompt: `User request:\n\n${opts.prompt}\n\nProduce the plan.`,
   });
 
-  // Clamp to min/max
   const agents = object.agents.slice(0, opts.maxAgents);
   while (agents.length < opts.minAgents) {
     agents.push({

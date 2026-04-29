@@ -20,7 +20,6 @@ export async function POST(_req: Request, ctx: RouteCtx) {
   const auth = await authOwn(conversationId);
   if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  // Remove existing share if any, then create new
   await db.conversationShare.deleteMany({ where: { conversationId } });
   const slug = crypto.randomUUID().slice(0, 10);
   const share = await db.conversationShare.create({

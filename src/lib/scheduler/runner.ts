@@ -55,7 +55,6 @@ async function tick() {
         },
       });
 
-      // Compute next run time
       let nextRunAt: Date | null = null;
       try {
         const interval = CronExpressionParser.parse(schedule.cron, { currentDate: now });
@@ -106,7 +105,7 @@ async function tick() {
 
 export function startScheduler() {
   console.log("[scheduler] starting — 30s interval");
-  // Run once immediately after a short delay to let the app warm up
+
   setTimeout(() => { void tick(); }, 5000);
   setInterval(() => { void tick(); }, 30_000);
 }

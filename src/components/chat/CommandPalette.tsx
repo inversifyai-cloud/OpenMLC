@@ -25,7 +25,6 @@ export function CommandPalette({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // focus on open
   useEffect(() => {
     if (open) {
       setQ("");
@@ -45,7 +44,7 @@ export function CommandPalette({ open, onClose }: Props) {
         const data = await res.json();
         setResults(data.results ?? []);
         setCursor(0);
-      } catch { /* ignore */ }
+      } catch {  }
       finally { setLoading(false); }
     }, 180);
   }, []);

@@ -29,7 +29,7 @@ export type Model = {
   isDefault?: boolean;
   bestFor?: string;
   costTier?: CostTier;
-  /** Some providers (e.g. Gemma via OpenRouter) reject explicit system prompts. */
+
   noSystemPrompt?: boolean;
 };
 

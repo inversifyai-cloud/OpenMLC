@@ -1,16 +1,7 @@
 import type { Model } from "@/types/chat";
 
-/**
- * Static curated catalog. Every entry below was verified against its
- * provider's chat-completions endpoint with a real API call. Models that
- * 404 (don't exist), require a non-chat endpoint (completions/responses),
- * or are image-only are excluded.
- *
- * The dynamic OpenRouter catalog (~369 more models) is appended at runtime
- * via lib/providers/catalog.ts.
- */
 export const models: Model[] = [
-  // ─── OpenAI GPT ───────────────────────────────────────────
+
   {
     id: "gpt-4o", name: "GPT-4o", providerId: "openai", providerModelId: "gpt-4o",
     description: "Powerful multimodal model for complex tasks", contextWindow: 128000,
@@ -66,7 +57,6 @@ export const models: Model[] = [
     bestFor: "Simple tasks", costTier: "low",
   },
 
-  // ─── OpenAI o-series (reasoning) ──────────────────────────
   {
     id: "o4-mini", name: "o4 mini", providerId: "openai", providerModelId: "o4-mini",
     description: "Compact reasoning model with strong performance", contextWindow: 200000,
@@ -86,7 +76,6 @@ export const models: Model[] = [
     bestFor: "Math & logic", costTier: "medium",
   },
 
-  // ─── Anthropic ────────────────────────────────────────────
   {
     id: "claude-opus-4-6", name: "Claude Opus 4.6", providerId: "anthropic", providerModelId: "claude-opus-4-6",
     description: "Most intelligent Claude — frontier-level reasoning and analysis", contextWindow: 200000,
@@ -130,7 +119,6 @@ export const models: Model[] = [
     bestFor: "Balanced work", costTier: "medium",
   },
 
-  // ─── Google Gemini ────────────────────────────────────────
   {
     id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", providerId: "google", providerModelId: "gemini-2.5-pro",
     description: "Most capable Gemini 2.5 model with thinking", contextWindow: 1048576,
@@ -162,7 +150,6 @@ export const models: Model[] = [
     bestFor: "Lightweight tasks", costTier: "low",
   },
 
-  // ─── xAI ──────────────────────────────────────────────────
   {
     id: "grok-3", name: "Grok 3", providerId: "xai", providerModelId: "grok-3",
     description: "Most capable Grok model", contextWindow: 131072,
@@ -188,7 +175,6 @@ export const models: Model[] = [
     bestFor: "Fast responses", costTier: "low",
   },
 
-  // ─── Fireworks (open-source on managed inference) ─────────
   {
     id: "fw-gpt-oss-120b", name: "GPT-OSS 120B", providerId: "fireworks",
     providerModelId: "accounts/fireworks/models/gpt-oss-120b",
@@ -218,8 +204,6 @@ export const models: Model[] = [
     bestFor: "Fast open-source", costTier: "low",
   },
 
-  // ─── OpenRouter (curated free tier) ───────────────────────
-  // The dynamic catalog appends ~369 more OpenRouter models at runtime.
   {
     id: "or-free-router", name: "OR Free Router", providerId: "openrouter", providerModelId: "openrouter/free",
     description: "Auto-routes to a random available free model — great for exploration", contextWindow: 200000,
@@ -329,7 +313,6 @@ export const models: Model[] = [
     bestFor: "Quick tasks", costTier: "free",
   },
 
-  // ─── Image Generation ──────────────────────────────────────
   {
     id: "dall-e-3", name: "DALL-E 3", providerId: "openai", providerModelId: "dall-e-3",
     description: "High-quality image generation from text prompts", contextWindow: 4000,
@@ -344,7 +327,6 @@ export const models: Model[] = [
   },
 ];
 
-// ── compatibility re-exports for openmlc ──────────────────────────────
 export const MODELS = models;
 export const STATIC_MODELS = models;
 

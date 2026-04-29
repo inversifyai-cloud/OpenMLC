@@ -10,7 +10,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   const rawBody = await req.text();
 
-  // Validate HMAC-SHA256 signature
   const sigHeader = req.headers.get("x-openmlc-signature") ?? "";
   const expected = createHmac("sha256", webhook.secret).update(rawBody).digest("hex");
 

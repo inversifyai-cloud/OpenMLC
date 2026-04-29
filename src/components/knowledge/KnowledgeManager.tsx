@@ -72,7 +72,7 @@ function formatDate(iso: string): string {
 }
 
 function shortMime(mime: string): string {
-  // last segment, dropping vendor prefixes / x- prefixes
+
   const tail = mime.split("/").pop() ?? mime;
   return tail.replace(/^x-/, "").replace(/^vnd\..*$/, "doc");
 }
@@ -81,7 +81,7 @@ type UploadState = {
   id: string;
   filename: string;
   size: number;
-  progress: number; // 0..1
+  progress: number;
   error?: string;
 };
 
@@ -104,11 +104,10 @@ export function KnowledgeManager({ initialFiles }: { initialFiles: KnowledgeFile
       const data = (await res.json()) as { files: KnowledgeFileRow[] };
       setFiles(data.files);
     } catch {
-      /* ignore — next poll will retry */
+
     }
   }, []);
 
-  // Poll while anything is pending/processing.
   useEffect(() => {
     if (!hasInflight) return;
     const t = setInterval(refresh, 4000);
@@ -153,14 +152,13 @@ export function KnowledgeManager({ initialFiles }: { initialFiles: KnowledgeFile
           xhr.send(fd);
         });
 
-        // Success — drop from uploads after a beat, refresh list immediately.
         setUploads((prev) => prev.filter((u) => u.id !== tempId));
         await refresh();
       } catch (err) {
         const msg = err instanceof Error ? err.message : "upload failed";
         setUploads((prev) => prev.map((u) => (u.id === tempId ? { ...u, error: msg } : u)));
         setGlobalError(msg);
-        // Auto-clear error pill after 6s.
+
         setTimeout(() => {
           setUploads((prev) => prev.filter((u) => u.id !== tempId));
         }, 6000);
@@ -194,7 +192,7 @@ export function KnowledgeManager({ initialFiles }: { initialFiles: KnowledgeFile
   );
 
   const setActive = useCallback(async (id: string, active: boolean) => {
-    // Optimistic
+
     setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, active } : f)));
     try {
       const res = await fetch(`/api/knowledge/${id}`, {
@@ -204,7 +202,7 @@ export function KnowledgeManager({ initialFiles }: { initialFiles: KnowledgeFile
       });
       if (!res.ok) throw new Error();
     } catch {
-      // Revert on failure.
+
       setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, active: !active } : f)));
       setGlobalError("could not update file");
     }
@@ -212,7 +210,7 @@ export function KnowledgeManager({ initialFiles }: { initialFiles: KnowledgeFile
 
   const reprocess = useCallback(
     async (id: string) => {
-      // Optimistic — show pending until poll catches up.
+
       setFiles((prev) =>
         prev.map((f) => (f.id === id ? { ...f, embeddingStatus: "pending" } : f))
       );
@@ -247,14 +245,13 @@ export function KnowledgeManager({ initialFiles }: { initialFiles: KnowledgeFile
     }
   }, [files]);
 
-  // Telemetry — completed-only chunk total feels honest.
   const totalCount = files.length;
   const totalSize = files.reduce((acc, f) => acc + f.size, 0);
   const totalChunks = files.reduce((acc, f) => acc + f.chunkCount, 0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      {/* HUD */}
+
       <div className="kb-hud">
         <div className="kb-hud-cell">
           <HudLabel>total</HudLabel>
@@ -291,7 +288,6 @@ export function KnowledgeManager({ initialFiles }: { initialFiles: KnowledgeFile
         </div>
       </div>
 
-      {/* Drop zone */}
       <div
         className={`kb-drop ${dragOver ? "is-over" : ""}`}
         onDragOver={(e) => {
@@ -318,7 +314,7 @@ export function KnowledgeManager({ initialFiles }: { initialFiles: KnowledgeFile
           style={{ display: "none" }}
           onChange={(e) => {
             onPickFiles(e.target.files);
-            // reset so the same file can be re-picked
+
             if (fileInput.current) fileInput.current.value = "";
           }}
         />
@@ -354,7 +350,6 @@ export function KnowledgeManager({ initialFiles }: { initialFiles: KnowledgeFile
         </button>
       </div>
 
-      {/* In-flight uploads */}
       {uploads.length > 0 && (
         <div className="kb-uploads">
           {uploads.map((u) => (
@@ -428,7 +423,6 @@ export function KnowledgeManager({ initialFiles }: { initialFiles: KnowledgeFile
         </div>
       )}
 
-      {/* List or empty */}
       {files.length === 0 ? (
         <div className="kb-empty">
           <span className="kb-empty-title">no documents uploaded yet</span>

@@ -6,11 +6,6 @@ export interface BudgetCheckResult {
   currentUsd?: number;
 }
 
-/**
- * Checks whether the profile has exceeded a BudgetCap for the given provider.
- * Sums UsageDaily.costUsd over the cap's periodDays window and compares to capUsd.
- * Returns { exceeded: false } if no cap is configured.
- */
 export async function checkBudget(
   profileId: string,
   providerId: string

@@ -15,7 +15,6 @@ export async function POST(req: Request, ctx: RouteCtx) {
   if (!session.profileId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const profileId = session.profileId;
 
-  // Verify ownership
   const source = await db.conversation.findUnique({
     where: { id: conversationId },
     include: {
@@ -37,15 +36,12 @@ export async function POST(req: Request, ctx: RouteCtx) {
 
   const { messageId } = parsed.data;
 
-  // Slice messages up to and including the pivot message
   const pivotIdx = source.messages.findIndex((m) => m.id === messageId);
   if (pivotIdx === -1) return NextResponse.json({ error: "message not found" }, { status: 404 });
   const messagesToCopy = source.messages.slice(0, pivotIdx + 1);
 
-  // Build branch title
   const branchTitle = `${(source.title ?? "untitled").slice(0, 60)} (branch)`;
 
-  // Create the new conversation + copy messages in a transaction
   const branch = await db.$transaction(async (tx) => {
     const newConv = await tx.conversation.create({
       data: {

@@ -36,7 +36,6 @@ export async function POST(req: Request) {
 
   const { name, cron, kind, payload, enabled } = parsed.data;
 
-  // Validate cron
   let nextRunAt: Date | null = null;
   try {
     const interval = CronExpressionParser.parse(cron, {});

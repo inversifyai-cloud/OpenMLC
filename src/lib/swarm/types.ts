@@ -1,8 +1,8 @@
 export type ReasoningEffort = "low" | "medium" | "high";
 
 export type AgentSpec = {
-  role: string;            // e.g. "researcher", "critic", "code-writer"
-  task: string;            // natural-language assignment from supervisor
+  role: string;
+  task: string;
   suggestedCapability: "research" | "code" | "reasoning" | "fast" | "general";
 };
 

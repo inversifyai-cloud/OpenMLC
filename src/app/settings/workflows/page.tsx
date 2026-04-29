@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { CronExpressionParser } from "cron-parser";
 
-// ── types ──────────────────────────────────────────────────────────────────────
-
 type Schedule = {
   id: string;
   name: string;
@@ -35,8 +33,6 @@ type Run = {
   schedule: { id: string; name: string } | null;
   webhook: { id: string; slug: string } | null;
 };
-
-// ── style constants ────────────────────────────────────────────────────────────
 
 const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 12 };
 const LABEL: React.CSSProperties = {
@@ -86,8 +82,6 @@ const ROW: React.CSSProperties = {
   borderBottom: "1px solid var(--stroke-1)",
 };
 
-// ── helpers ────────────────────────────────────────────────────────────────────
-
 function nextFires(cron: string): string[] {
   try {
     const iter = CronExpressionParser.parse(cron);
@@ -126,8 +120,6 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleString();
 }
 
-// ── CronInput ──────────────────────────────────────────────────────────────────
-
 function CronInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const fires = nextFires(value);
   const invalid = value.length > 0 && fires.length === 0;
@@ -161,8 +153,6 @@ function CronInput({ value, onChange }: { value: string; onChange: (v: string) =
     </div>
   );
 }
-
-// ── SchedulesTab ───────────────────────────────────────────────────────────────
 
 function SchedulesTab() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -329,8 +319,6 @@ function SchedulesTab() {
     </div>
   );
 }
-
-// ── WebhooksTab ────────────────────────────────────────────────────────────────
 
 function WebhooksTab() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
@@ -533,8 +521,6 @@ curl -X POST ${baseUrl}/api/hooks/${created.slug} \\
   );
 }
 
-// ── RecentRuns ────────────────────────────────────────────────────────────────
-
 function RecentRuns() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [loading, setLoading] = useState(true);
@@ -565,8 +551,6 @@ function RecentRuns() {
     </div>
   );
 }
-
-// ── Page ────────────────────────────────────────────────────────────────────────
 
 export default function WorkflowsPage() {
   const [tab, setTab] = useState<"schedules" | "webhooks">("schedules");

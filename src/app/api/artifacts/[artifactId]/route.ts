@@ -22,7 +22,6 @@ export async function GET(_req: Request, ctx: RouteCtx) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { conversation: _conv, ...rest } = artifact;
   return NextResponse.json({ artifact: rest });
 }

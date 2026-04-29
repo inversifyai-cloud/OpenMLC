@@ -5,11 +5,6 @@ import { createXai } from "@ai-sdk/xai";
 import type { LanguageModel } from "ai";
 import type { ProviderId } from "@/types/chat";
 
-/**
- * Build a Vercel AI SDK language model for the given provider + model id.
- * The key is always passed in (resolved via resolve-key beforehand) — this
- * function never touches process.env.
- */
 export function getProviderModel(
   providerId: ProviderId,
   providerModelId: string,

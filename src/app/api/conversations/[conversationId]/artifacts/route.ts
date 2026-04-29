@@ -11,7 +11,6 @@ export async function GET(_req: Request, ctx: RouteCtx) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // Auth: verify conversation belongs to this profile
   const conv = await db.conversation.findUnique({
     where: { id: conversationId },
     select: { profileId: true },

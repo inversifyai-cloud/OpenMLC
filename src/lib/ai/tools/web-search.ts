@@ -18,7 +18,7 @@ export const webSearchDefinition: ToolDefinition<"web_search"> = {
   name: "web_search",
   displayName: "Searched the web",
   verb: "Searching the web",
-  // Tavily key is env-only (not BYOK). Disable if env var missing.
+
   isEnabled: ({ ctx }) => !!ctx.resolvedKeys.tavily,
   build: (ctx) =>
     tool({

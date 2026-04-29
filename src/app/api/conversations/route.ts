@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   try {
     raw = await req.json();
   } catch {
-    // empty body is fine
+
   }
   const parsed = createSchema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: "invalid input" }, { status: 400 });

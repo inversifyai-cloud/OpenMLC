@@ -14,10 +14,7 @@ export interface ToolContext {
   profileId: string;
   conversationId: string | null;
   db: typeof db;
-  /**
-   * Resolved API keys per provider. The harness pre-resolves the keys it needs
-   * from BYOK → env so individual tools don't have to know about the resolver.
-   */
+
   resolvedKeys: {
     openai?: string;
     tavily?: string;

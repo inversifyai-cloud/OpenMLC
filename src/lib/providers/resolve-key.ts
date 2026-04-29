@@ -18,15 +18,11 @@ export type ResolvedKey = {
   source: "byok" | "env";
 };
 
-/**
- * Resolves a provider API key for the given profile.
- * Order: profile BYOK (if encrypted-at-rest is configured) → env fallback → null.
- */
 export async function resolveProviderKey(
   profileId: string,
   providerId: ProviderId
 ): Promise<ResolvedKey | null> {
-  // 1) BYOK lookup
+
   if (isByokAvailable()) {
     try {
       const row = await db.profileApiKey.findUnique({
@@ -37,22 +33,20 @@ export async function resolveProviderKey(
         return { key, baseUrl: row.baseUrl ?? undefined, source: "byok" };
       }
     } catch {
-      // fall through to env
+
     }
   }
 
-  // 2) Env fallback
   const envName = ENV_VAR[providerId];
   if (envName) {
     const raw = process.env[envName];
     if (raw) {
-      // strip surrounding quotes if .env was double-quoted
+
       const key = raw.replace(/^"+|"+$/g, "");
       if (key) return { key, source: "env" };
     }
   }
 
-  // 3) Ollama special case — no key, just baseUrl
   if (providerId === "ollama") {
     const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434/v1";
     return { key: "ollama", baseUrl, source: "env" };

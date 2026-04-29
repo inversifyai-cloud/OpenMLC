@@ -64,7 +64,6 @@ export async function POST(req: Request) {
     return Response.json({ error: "unknown model" }, { status: 400 });
   }
 
-  // ── Budget pre-check ─────────────────────────────────────────────────
   const budget = await checkBudget(profileId, model.providerId);
   if (budget.exceeded) {
     return Response.json(
@@ -73,7 +72,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Verify conversation ownership
   const conv = await db.conversation.findUnique({
     where: { id: conversationId },
     select: { id: true, profileId: true, systemPrompt: true },
@@ -93,7 +91,6 @@ export async function POST(req: Request) {
     );
   }
 
-  // Load pending attachments
   const attachments = attachmentIds?.length
     ? await db.attachment.findMany({
         where: { id: { in: attachmentIds }, profileId },
@@ -103,12 +100,10 @@ export async function POST(req: Request) {
   const imageAttachments = attachments.filter((a) => isImage(a.mimeType));
   const textAttachments = attachments.filter((a) => a.extractedText);
 
-  // Build injected text context from documents/code files
   const textContext = textAttachments
     .map((a) => `\n\n[Attached file: ${a.filename}]\n${a.extractedText ?? ""}`)
     .join("");
 
-  // Persist user message
   const lastUi = uiMessages.at(-1);
   const userText = lastUi ? extractText(lastUi) : "";
   const storedContent = (userText + textContext).trim() || "[attachment]";
@@ -122,7 +117,6 @@ export async function POST(req: Request) {
     },
   });
 
-  // Link pending attachments to the user message
   if (attachmentIds?.length) {
     await db.attachment.updateMany({
       where: { id: { in: attachmentIds }, profileId, messageId: null },
@@ -135,12 +129,10 @@ export async function POST(req: Request) {
     data: { updatedAt: new Date(), modelId: model.id },
   });
 
-  // ── Image generation branch ──────────────────────────────────────────
   if (model.capabilities.includes("image-gen")) {
     return handleImageGen(model, resolved.key, userText || "[generate an image]", conversationId, profileId);
   }
 
-  // ── Text / vision branch ─────────────────────────────────────────────
   const provider = getProviderModel(
     model.providerId,
     model.providerModelId,
@@ -148,7 +140,6 @@ export async function POST(req: Request) {
     resolved.baseUrl
   );
 
-  // ── RAG context (KB documents) — system-prompt injection ──────────
   let ragContext: string | null = null;
   if (knowledgeBaseEnabled && userText) {
     try {
@@ -158,10 +149,9 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── URL auto-read — fetch any URLs the user pasted ───────────────
   const urlInjections: string[] = [];
   if (userText) {
-    const urls = extractUrls(userText).slice(0, 3); // cap at 3 URLs
+    const urls = extractUrls(userText).slice(0, 3);
     if (urls.length > 0) {
       const fetched = await Promise.all(urls.map((u) => fetchUrlContent(u).catch(() => null)));
       for (let i = 0; i < urls.length; i++) {
@@ -175,7 +165,6 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Tool harness ──────────────────────────────────────────────────
   const tavilyKey = process.env.TAVILY_API_KEY ?? undefined;
   const openaiResolved = await resolveProviderKey(profileId, "openai");
   const settings = await getSettings();
@@ -199,7 +188,6 @@ export async function POST(req: Request) {
     context: toolCtx,
   });
 
-  // ── MCP tools ─────────────────────────────────────────────────────
   let mcpBundle: Awaited<ReturnType<typeof buildMcpTools>> | null = null;
   if (toolsEnabled && model.capabilities.includes("tools")) {
     try {
@@ -210,7 +198,6 @@ export async function POST(req: Request) {
   }
   const tools = { ...builtinTools, ...(mcpBundle?.tools ?? {}) };
 
-  // ── Compose system prompt ──────────────────────────────────────────
   const systemBase = composeSystemPrompt({ conversationPrompt: conv.systemPrompt });
   const ragBlock = ragContext
     ? `\n\n[knowledge base context — relevant excerpts from the user's uploaded documents:\n${ragContext}\n]\nWhen using these excerpts, cite the source filename inline.`
@@ -221,12 +208,10 @@ export async function POST(req: Request) {
   const toolHint = toolsSystemPromptHint(enabledNames);
   const systemPrompt = systemBase + ragBlock + urlBlock + toolHint;
 
-  // ── Provider options for thinking/reasoning ────────────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const providerOptions: Record<string, any> = {};
   if (reasoningEffort !== "off" && model.capabilities.includes("reasoning")) {
     if (model.providerId === "anthropic") {
-      // Claude extended thinking — budget tokens scale with effort
+
       const budget = reasoningEffort === "high" ? 16000 : reasoningEffort === "medium" ? 6000 : 2000;
       providerOptions.anthropic = { thinking: { type: "enabled", budgetTokens: budget } };
     } else if (model.providerId === "openai") {
@@ -237,10 +222,8 @@ export async function POST(req: Request) {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let modelMessages: any[] = await convertToModelMessages(uiMessages);
 
-  // Inject image parts + text context into last user message
   if ((imageAttachments.length > 0 && model.capabilities.includes("vision")) || textContext) {
     const imageParts =
       model.capabilities.includes("vision")
@@ -295,7 +278,6 @@ export async function POST(req: Request) {
           data: { updatedAt: new Date() },
         });
 
-        // Record usage + cost
         if (usage?.inputTokens || usage?.outputTokens) {
           await recordUsage({
             profileId,
@@ -308,7 +290,6 @@ export async function POST(req: Request) {
           }).catch((err) => console.error("[chat] recordUsage failed", err));
         }
 
-        // Auto-rename from first exchange
         const messageCount = await db.message.count({ where: { conversationId } });
         if (messageCount === 2) {
           const firstText = userText.split(/\n/)[0].slice(0, 80).trim();
@@ -320,7 +301,6 @@ export async function POST(req: Request) {
           }
         }
 
-        // M8.4b — Extract and persist artifacts from assistant output
         const extracted = extractArtifacts(text);
         if (extracted.length > 0) {
           await db.artifact.createMany({
@@ -355,7 +335,7 @@ async function handleImageGen(
   conversationId: string,
   profileId: string,
 ) {
-  void profileId; // reserved for future per-profile quotas
+  void profileId;
   try {
     const res = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
@@ -384,7 +364,6 @@ async function handleImageGen(
     const b64 = data.data?.[0]?.b64_json;
     if (!b64) return Response.json({ error: "no image returned" }, { status: 500 });
 
-    // Save to /public/generated/
     const filename = `${Date.now()}.png`;
     const genDir = join(process.cwd(), "public", "generated");
     await mkdir(genDir, { recursive: true });
@@ -393,7 +372,6 @@ async function handleImageGen(
 
     const markdown = `![Generated image — ${model.name}](${publicUrl})`;
 
-    // Persist assistant message
     await db.message.create({
       data: { conversationId, role: "assistant", content: markdown, modelId: model.id },
     });
@@ -402,7 +380,6 @@ async function handleImageGen(
       data: { updatedAt: new Date() },
     });
 
-    // Return as AI SDK UIMessage stream
     const msgId = `img-${Date.now()}`;
     const enc = new TextEncoder();
     const stream = new ReadableStream({
@@ -436,7 +413,7 @@ function extractText(message: UIMessage): string {
       .map((p) => p.text)
       .join("");
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   if (typeof (message as any).content === "string") return (message as any).content;
   return "";
 }

@@ -10,7 +10,6 @@ export async function GET(req: Request) {
   const q = searchParams.get("q")?.trim() ?? "";
   if (!q) return NextResponse.json({ results: [] });
 
-  // Search conversation titles
   const byTitle = await db.conversation.findMany({
     where: {
       profileId: session.profileId,
@@ -22,7 +21,6 @@ export async function GET(req: Request) {
     select: { id: true, title: true, modelId: true, updatedAt: true },
   });
 
-  // Search message content — dedupe by conversationId
   const byMessage = await db.message.findMany({
     where: {
       conversation: { profileId: session.profileId, archived: false },
@@ -43,7 +41,7 @@ export async function GET(req: Request) {
   for (const m of byMessage) {
     if (seen.has(m.conversationId)) continue;
     seen.add(m.conversationId);
-    // extract a small snippet around the match
+
     const idx = m.content.toLowerCase().indexOf(q.toLowerCase());
     const start = Math.max(0, idx - 40);
     const end = Math.min(m.content.length, idx + q.length + 80);
@@ -51,7 +49,6 @@ export async function GET(req: Request) {
     merged.push({ ...m.conversation, snippet });
   }
 
-  // sort merged by updatedAt desc
   merged.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   return NextResponse.json({ results: merged.slice(0, 30) });

@@ -17,7 +17,7 @@ function dotColor(modelId: string): string {
       return color;
     }
   }
-  // derive from id prefix
+
   const prefix = modelId.split(":")[0];
   return PROVIDER_DOT[prefix] ?? "var(--fg-4)";
 }
@@ -122,7 +122,7 @@ export function CompareView({ prompt, modelIds, onPickWinner, onCancel }: Props)
               })
             );
           } catch {
-            // ignore parse errors
+
           }
         }
       }
@@ -131,7 +131,7 @@ export function CompareView({ prompt, modelIds, onPickWinner, onCancel }: Props)
     return () => {
       ctrl.abort();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   function handleCancel() {
@@ -151,7 +151,7 @@ export function CompareView({ prompt, modelIds, onPickWinner, onCancel }: Props)
         background: "var(--bg-app)",
       }}
     >
-      {/* Header bar */}
+
       <div
         style={{
           display: "flex",
@@ -192,7 +192,6 @@ export function CompareView({ prompt, modelIds, onPickWinner, onCancel }: Props)
         </button>
       </div>
 
-      {/* Prompt display */}
       <div
         style={{
           padding: "8px 14px",
@@ -209,7 +208,6 @@ export function CompareView({ prompt, modelIds, onPickWinner, onCancel }: Props)
         {prompt}
       </div>
 
-      {/* Column grid */}
       <div className="compare-grid" style={{ flex: "1 1 0", minHeight: 0 }}>
         {cols.map((col) => {
           const providerId = col.modelId.split(":")[0];
@@ -266,7 +264,6 @@ export function CompareView({ prompt, modelIds, onPickWinner, onCancel }: Props)
         })}
       </div>
 
-      {/* Unused: suppress providerId lint */}
       <span style={{ display: "none" }} aria-hidden />
     </div>
   );

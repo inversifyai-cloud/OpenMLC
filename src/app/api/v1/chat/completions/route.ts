@@ -1,12 +1,4 @@
-/**
- * OpenAI-compatible chat completions endpoint.
- * Allows tools like Cursor, VS Code Copilot, and local clients to connect
- * to OpenMLC as if it were an OpenAI-compatible provider.
- *
- * Auth: Bearer token in Authorization header.
- *   - Matches OPENMLC_API_KEY env var → uses first profile
- *   - No env var set → open (only suitable for local / trusted deployments)
- */
+
 import { NextResponse } from "next/server";
 import { streamText, generateText } from "ai";
 import { z } from "zod";
@@ -16,7 +8,6 @@ import { getProviderModel } from "@/lib/providers";
 import { resolveProviderKey } from "@/lib/providers/resolve-key";
 import { recordUsage } from "@/lib/usage/record";
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
 async function authenticate(req: Request): Promise<{ profileId: string } | null> {
   const envKey = process.env.OPENMLC_API_KEY;
   const authHeader = req.headers.get("Authorization") ?? "";
@@ -25,14 +16,12 @@ async function authenticate(req: Request): Promise<{ profileId: string } | null>
   if (envKey) {
     if (bearer !== envKey) return null;
   }
-  // If no OPENMLC_API_KEY set, allow any bearer (open local mode)
-  // Use first profile in the database
+
   const profile = await db.profile.findFirst({ select: { id: true } });
   if (!profile) return null;
   return { profileId: profile.id };
 }
 
-// ── OpenAI message format conversion ─────────────────────────────────────────
 type OAIMessage = {
   role: "system" | "user" | "assistant" | "tool";
   content: string | null;
@@ -42,14 +31,13 @@ type OAIMessage = {
 
 function oaiToModelMessages(messages: OAIMessage[]) {
   return messages
-    .filter((m) => m.role !== "tool") // skip tool result messages for now
+    .filter((m) => m.role !== "tool")
     .map((m) => ({
       role: m.role as "system" | "user" | "assistant",
       content: m.content ?? "",
     }));
 }
 
-// ── Request schema ────────────────────────────────────────────────────────────
 const requestSchema = z.object({
   model: z.string().min(1),
   messages: z.array(z.object({
@@ -64,7 +52,6 @@ const requestSchema = z.object({
   top_p: z.number().min(0).max(1).optional(),
 });
 
-// ── Response builders ─────────────────────────────────────────────────────────
 function makeId() {
   return `chatcmpl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -103,7 +90,6 @@ function sseChunk(id: string, model: string, delta: string, finishReason?: strin
   return `data: ${JSON.stringify(payload)}\n\n`;
 }
 
-// ── Main handler ─────────────────────────────────────────────────────────────
 export async function POST(req: Request) {
   const auth = await authenticate(req);
   if (!auth) {
@@ -161,7 +147,7 @@ export async function POST(req: Request) {
           }
           ctrl.enqueue(enc.encode(sseChunk(completionId, modelId, "", "stop")));
           ctrl.enqueue(enc.encode("data: [DONE]\n\n"));
-          // Record usage (no messageId — stateless endpoint)
+
           const usage = await result.usage;
           if (usage?.inputTokens || usage?.outputTokens) {
             recordUsage({
@@ -198,7 +184,7 @@ export async function POST(req: Request) {
       maxOutputTokens: max_tokens,
       temperature,
     });
-    // Record usage (no messageId — stateless endpoint)
+
     if (result.usage?.inputTokens || result.usage?.outputTokens) {
       recordUsage({
         profileId,

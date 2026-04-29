@@ -1,4 +1,4 @@
-// Pure mime-type helpers — safe to import from client components.
+
 
 const IMAGE_TYPES = new Set([
   "image/jpeg",

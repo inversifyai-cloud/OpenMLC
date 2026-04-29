@@ -1,21 +1,16 @@
-/* ============================================================
-   OpenMLC — Operator's Notebook
-   Paper · ink · phosphor green · sharp 1px hairlines
-   ============================================================ */
+
 
 :root {
-  /* ── Phosphor green (single accent) ── */
-  --green-400: #22C55E;   /* dark mode accent */
-  --green-500: #16A34A;   /* light mode accent */
-  --green-600: #15803D;   /* pressed / hover */
-  --green-100: #DCFCE7;   /* tint background */
 
-  /* Aliases kept for legacy refs in code (swarm dots, etc) */
+  --green-400: #22C55E;
+  --green-500: #16A34A;
+  --green-600: #15803D;
+  --green-100: #DCFCE7;
+
   --green-300: #4ADE80;
 
-  /* ── Ink (warm near-black scale) ── */
   --ink-0:   #FFFFFF;
-  --ink-50:  #FAFAF7;   /* paper */
+  --ink-50:  #FAFAF7;
   --ink-100: #F4F3EE;
   --ink-200: #E8E6DF;
   --ink-300: #C9C7BF;
@@ -24,39 +19,34 @@
   --ink-600: #3F3E3A;
   --ink-700: #2A2926;
   --ink-800: #1A1A18;
-  --ink-900: #0E0F0C;   /* coal */
+  --ink-900: #0E0F0C;
   --ink-950: #07080A;
 
-  /* ── Status ── */
   --signal-ok:   #16A34A;
   --signal-warn: #D97706;
   --signal-err:  #DC2626;
   --signal-info: #16A34A;
 
-  /* ── Spacing (4-base) ── */
   --s-0: 0;     --s-1: 2px;   --s-2: 4px;
   --s-3: 8px;   --s-4: 12px;  --s-5: 16px;
   --s-6: 20px;  --s-7: 24px;  --s-8: 32px;
   --s-9: 40px;  --s-10: 48px; --s-11: 64px;
   --s-12: 80px; --s-13: 96px; --s-14: 128px;
 
-  /* ── Radii — SHARP ── */
   --r-0:    0;
-  --r-1:    2px;       /* default — almost square */
-  --r-2:    3px;       /* small chrome */
-  --r-3:    4px;       /* buttons, inputs */
-  --r-4:    6px;       /* cards, modals */
+  --r-1:    2px;
+  --r-2:    3px;
+  --r-3:    4px;
+  --r-4:    6px;
   --r-5:    8px;
   --r-6:    10px;
   --r-7:    12px;
-  --r-full: 9999px;    /* only for status pills */
+  --r-full: 9999px;
 
-  /* ── Border widths ── */
   --bw-hair: 0.5px;
   --bw-1:    1px;
   --bw-2:    2px;
 
-  /* ── Motion ── */
   --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -66,11 +56,9 @@
   --dur-4: 600ms;
   --dur-5: 1000ms;
 
-  /* ── Typography ── */
   --font-sans: var(--font-sans-loaded), "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-mono: var(--font-code), "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  /* Type scale */
   --t-micro:   11px;
   --t-caption: 12px;
   --t-small:   13px;
@@ -83,44 +71,38 @@
   --t-h2:      48px;
   --t-h1:      64px;
 
-  /* Weights */
   --w-light:   300;
   --w-regular: 400;
   --w-medium:  500;
   --w-semi:    600;
   --w-bold:    700;
 
-  /* Line heights */
   --lh-tight:  1.05;
   --lh-snug:   1.2;
   --lh-normal: 1.5;
   --lh-loose:  1.7;
 
-  /* Letter spacing */
   --tr-tight:    -0.02em;
   --tr-normal:    0;
   --tr-wide:      0.04em;
   --tr-mono-hud:  0.10em;
 }
 
-/* ============================================================
-   SEMANTIC TOKENS — light (paper)
-   ============================================================ */
 :root,
 [data-theme="light"] {
-  --bg-app:      #F4F3EE;     /* sidebar — soft paper */
-  --bg-canvas:   #FAFAF7;     /* main canvas */
-  --bg-sunken:   #ECEAE3;     /* code blocks, recessed */
-  --bg-elevated: #FFFFFF;     /* modals */
+  --bg-app:      #F4F3EE;
+  --bg-canvas:   #FAFAF7;
+  --bg-sunken:   #ECEAE3;
+  --bg-elevated: #FFFFFF;
 
-  --fg-1:      #0E0F0C;       /* coal — primary ink */
+  --fg-1:      #0E0F0C;
   --fg-2:      #2A2926;
   --fg-3:      #5E5C56;
   --fg-4:      #8E8C84;
-  --fg-accent: #16A34A;       /* phosphor */
+  --fg-accent: #16A34A;
   --fg-mint:   #16A34A;
 
-  --stroke-1:     rgba(14, 15, 12, 0.08);    /* hairline */
+  --stroke-1:     rgba(14, 15, 12, 0.08);
   --stroke-2:     rgba(14, 15, 12, 0.14);
   --stroke-3:     rgba(14, 15, 12, 0.24);
   --stroke-focus: #16A34A;
@@ -137,9 +119,6 @@
   --shadow-4: 0 12px 32px rgba(14, 15, 12, 0.16), 0 0 0 1px rgba(14, 15, 12, 0.08);
 }
 
-/* ============================================================
-   SEMANTIC TOKENS — dark (coal)
-   ============================================================ */
 [data-theme="dark"] {
   --bg-app:      #0E0F0C;
   --bg-canvas:   #15161A;
@@ -199,9 +178,6 @@
   }
 }
 
-/* ============================================================
-   ELEMENT DEFAULTS
-   ============================================================ */
 :where(html) {
   font-family: var(--font-sans);
   font-size: var(--t-body);

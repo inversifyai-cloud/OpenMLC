@@ -66,7 +66,7 @@ export function SwarmRunView({
   completedAt,
   embedded = false,
 }: Props) {
-  // Tick for live elapsed-time display.
+
   const [, setTick] = useState(0);
   useEffect(() => {
     if (status === "complete" || status === "error" || status === "idle") return;

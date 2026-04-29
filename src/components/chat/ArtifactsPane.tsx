@@ -22,7 +22,6 @@ interface ArtifactsPaneProps {
 
 type Tab = "preview" | "code" | "history";
 
-// ── Tiny LCS-based line diff (<40 lines) ─────────────────────────────────────
 function lcs(a: string[], b: string[]): number[][] {
   const m = a.length, n = b.length;
   const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
@@ -53,7 +52,6 @@ function diffLines(oldText: string, newText: string): DiffLine[] {
   return result;
 }
 
-// ── Download helper ────────────────────────────────────────────────────────
 function extForType(type: ArtifactData["type"], language?: string | null): string {
   if (type === "html") return ".html";
   if (type === "svg") return ".svg";
@@ -72,7 +70,6 @@ function downloadArtifact(artifact: ArtifactData) {
   URL.revokeObjectURL(url);
 }
 
-// ── Component ──────────────────────────────────────────────────────────────
 export function ArtifactsPane({ artifact, onClose, versions = [] }: ArtifactsPaneProps) {
   const [tab, setTab] = useState<Tab>("preview");
   const [selectedVersion, setSelectedVersion] = useState<ArtifactData | null>(null);
@@ -91,7 +88,7 @@ export function ArtifactsPane({ artifact, onClose, versions = [] }: ArtifactsPan
 
   return (
     <div className={`artifacts-pane ${isOpen ? "open" : ""}`} role="complementary" aria-label="Artifact preview">
-      {/* Header */}
+
       <div className="artifacts-pane__header">
         <span className="artifacts-pane__title">{artifact?.title ?? "Artifact"}</span>
         {artifact && (
@@ -114,7 +111,6 @@ export function ArtifactsPane({ artifact, onClose, versions = [] }: ArtifactsPan
         </button>
       </div>
 
-      {/* Tabs */}
       <div className="artifacts-pane__tabs">
         <button className={`artifacts-pane__tab ${tab === "preview" ? "active" : ""}`} onClick={() => setTab("preview")}>
           Preview
@@ -127,7 +123,6 @@ export function ArtifactsPane({ artifact, onClose, versions = [] }: ArtifactsPan
         </button>
       </div>
 
-      {/* Content */}
       <div className="artifacts-pane__content">
         {tab === "preview" && artifact && (
           <>
@@ -141,7 +136,7 @@ export function ArtifactsPane({ artifact, onClose, versions = [] }: ArtifactsPan
             {artifact.type === "svg" && (
               <div
                 className="artifacts-pane__svg-wrap"
-                // SVG from artifact content is authored by the AI and sandboxed to the pane
+
                 dangerouslySetInnerHTML={{ __html: artifact.content }}
               />
             )}

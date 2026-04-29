@@ -55,7 +55,7 @@ export function SwarmHomeClient() {
       const data = (await res.json()) as { runs: RunSummary[] };
       setRecent(data.runs ?? []);
     } catch {
-      // ignore
+
     } finally {
       setLoadingRecent(false);
     }
@@ -65,7 +65,6 @@ export function SwarmHomeClient() {
     loadRecent();
   }, []);
 
-  // Refresh recent runs when an in-flight run completes.
   useEffect(() => {
     if (swarm.status === "complete" || swarm.status === "error") {
       loadRecent();

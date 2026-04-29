@@ -44,7 +44,6 @@ export function ConvContextMenu({
     onClose();
   }
 
-  // Adjust position so menu doesn't overflow viewport
   const menuStyle: React.CSSProperties = {
     position: "fixed",
     top: y,

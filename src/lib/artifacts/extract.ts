@@ -1,10 +1,4 @@
-/**
- * M8.4b — Artifact extraction from assistant message text.
- *
- * Two detection strategies:
- * 1. Explicit <artifact title="X" type="html|svg|code|markdown">...</artifact> tags
- * 2. Fenced code blocks ≥ 30 lines (auto type=code, language from fence tag, title="snippet")
- */
+
 
 export interface ExtractedArtifact {
   type: "html" | "svg" | "code" | "markdown";
@@ -20,18 +14,13 @@ function parseType(raw: string): ExtractedArtifact["type"] {
   return VALID_TYPES.has(t) ? (t as ExtractedArtifact["type"]) : "code";
 }
 
-/**
- * Extract artifacts from a completed assistant message.
- * Returns [] when nothing qualifies.
- */
 export function extractArtifacts(messageText: string): ExtractedArtifact[] {
   const results: ExtractedArtifact[] = [];
 
-  // ── Strategy 1: explicit <artifact> tags ─────────────────────────────
   const tagRe =
     /<artifact\s+([^>]*)>([\s\S]*?)<\/artifact>/gi;
   let tagMatch: RegExpExecArray | null;
-  const tagMatches = new Set<string>(); // track consumed ranges to avoid double-counting
+  const tagMatches = new Set<string>();
 
   while ((tagMatch = tagRe.exec(messageText)) !== null) {
     const attrs = tagMatch[1];
@@ -50,7 +39,6 @@ export function extractArtifacts(messageText: string): ExtractedArtifact[] {
     tagMatches.add(`${tagMatch.index}:${tagMatch[0].length}`);
   }
 
-  // ── Strategy 2: fenced code blocks ≥ 30 lines ────────────────────────
   const fenceRe = /```(\w*)\n([\s\S]*?)```/g;
   let fenceMatch: RegExpExecArray | null;
 
@@ -61,11 +49,10 @@ export function extractArtifacts(messageText: string): ExtractedArtifact[] {
 
     if (lineCount < 30) continue;
 
-    // Don't double-count if this fence is inside an <artifact> tag we already consumed
     const isInsideTag = results.some((_, idx) => {
-      // simple heuristic: check if fenceMatch index overlaps with any tag match range
+
       void idx;
-      return false; // tags are stripped before content, so no overlap in raw text
+      return false;
     });
     if (isInsideTag) continue;
 

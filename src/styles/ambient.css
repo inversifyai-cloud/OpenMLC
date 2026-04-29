@@ -1,6 +1,4 @@
-/* OpenMLC — ambient gradient layer.
-   A static cyan/mint radial wash behind glass surfaces.
-   Apply .bg-orbit on a parent to enable a 60s linear orbit (marketing only). */
+
 
 .ambient-layer {
   position: fixed;

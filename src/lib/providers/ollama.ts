@@ -1,16 +1,8 @@
 import type { Model } from "@/types/chat";
 
-/**
- * Fetch the Ollama tag catalog and convert to openmlc Model[].
- *
- * Ollama runs locally on the operator's machine. We accept the openai-compat
- * base URL (e.g. http://localhost:11434/v1) and derive the host root
- * (http://localhost:11434) for the /api/tags call.
- */
-
 type OllamaTag = {
-  name: string;       // e.g. "llama3.2:latest"
-  model: string;      // same shape; safer to use
+  name: string;
+  model: string;
   size?: number;
   details?: {
     family?: string;
@@ -19,12 +11,12 @@ type OllamaTag = {
   };
 };
 
-const TTL_MS = 60 * 1000; // 1 minute (local server, cheap to refetch)
+const TTL_MS = 60 * 1000;
 
 const cache = new Map<string, { at: number; models: Model[] }>();
 
 function rootOf(baseUrl: string): string {
-  // Strip /v1 suffix if present
+
   return baseUrl.replace(/\/v1\/?$/, "").replace(/\/$/, "");
 }
 
@@ -38,7 +30,7 @@ function transform(tag: OllamaTag, baseUrl: string): Model {
     providerId: "ollama",
     providerModelId: id,
     capabilities: ["text"],
-    contextWindow: 32768, // generic default; ollama doesn't expose this in /tags
+    contextWindow: 32768,
     description: desc,
     costTier: "free",
   };
@@ -64,8 +56,7 @@ export async function fetchOllamaCatalog(baseUrl: string): Promise<Model[]> {
     cache.set(root, { at: now, models });
     return models;
   } catch (err) {
-    // Ollama not running / unreachable — cache the empty result briefly so we
-    // don't hammer the loopback when offline, then move on quietly.
+
     cache.set(root, { at: now, models: [] });
     if (process.env.NODE_ENV !== "production") {
       console.warn(`[ollama] unreachable at ${root}: ${err instanceof Error ? err.message : err}`);

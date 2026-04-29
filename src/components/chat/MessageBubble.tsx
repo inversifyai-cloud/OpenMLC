@@ -7,7 +7,6 @@ import { getModel } from "@/lib/providers/registry";
 import { isImage } from "@/lib/mime";
 import type { ChatAttachment } from "@/types/chat";
 
-// ── Part-level types (AI SDK v6) ──────────────────────────────────────────────
 type TextPart      = { type: "text"; text: string };
 type ReasoningPart = { type: "reasoning"; text: string };
 type StepStartPart = { type: "step-start" };
@@ -25,7 +24,6 @@ type ToolPart = {
 export type AnyPart =
   | TextPart | ReasoningPart | StepStartPart | SourceUrlPart | ToolPart | { type: string };
 
-// ── Tool helpers ──────────────────────────────────────────────────────────────
 const TOOL_LABELS: Record<string, string> = {
   web_search:     "web search",
   url_read:       "read url",
@@ -62,7 +60,6 @@ function getDomain(url: string): string {
   catch { return url.slice(0, 30); }
 }
 
-// ── Per-tool: input hint & output meta (right-aligned) ───────────────────────
 function getHint(rawName: string, input: unknown): string | null {
   if (!input || typeof input !== "object") return null;
   const i = input as Record<string, unknown>;
@@ -98,7 +95,6 @@ function getOutputMeta(rawName: string, output: unknown): { text: string; cls: "
   }
 }
 
-// ── Output body renderers ─────────────────────────────────────────────────────
 function WebSearchResults({ output }: { output: unknown }) {
   const o = typeof output === "object" && output ? output as Record<string, unknown> : {};
   const results = (Array.isArray(o.results) ? o.results : []) as Array<{
@@ -208,7 +204,6 @@ function GenericToolOutput({ output }: { output: unknown }) {
   );
 }
 
-// ── TimelineNode — one process step ──────────────────────────────────────────
 type TlStatus = "idle" | "active" | "done" | "error";
 
 function TimelineNode({
@@ -257,7 +252,6 @@ function TimelineNode({
   );
 }
 
-// ── Build a TimelineNode from a reasoning part ────────────────────────────────
 function ThinkingNode({ part, streaming }: { part: ReasoningPart; streaming?: boolean }) {
   const chars = part.text.length;
   const status: TlStatus = streaming ? "active" : "done";
@@ -272,7 +266,6 @@ function ThinkingNode({ part, streaming }: { part: ReasoningPart; streaming?: bo
   );
 }
 
-// ── Build a TimelineNode from a tool part ─────────────────────────────────────
 function ToolNode({ part, streaming }: { part: ToolPart; streaming?: boolean }) {
   const rawName = resolveToolName(part);
   const mcp = isMcpTool(rawName);
@@ -315,7 +308,6 @@ function ToolNode({ part, streaming }: { part: ToolPart; streaming?: boolean }) 
     );
   }
 
-  // code_exec output needs flush padding (bar goes edge-to-edge)
   const isCodeExecDone = rawName === "code_exec" && isDone && !isError;
   const wrappedBody = isCodeExecDone
     ? <div style={{ border: "1px solid var(--stroke-1)", borderRadius: "var(--r-2)", overflow: "hidden" }}>{body}</div>
@@ -335,7 +327,6 @@ function ToolNode({ part, streaming }: { part: ToolPart; streaming?: boolean }) 
   );
 }
 
-// ── Source chips ──────────────────────────────────────────────────────────────
 function SourceChips({ parts }: { parts: AnyPart[] }) {
   const sources = parts.filter((p): p is SourceUrlPart => p.type === "source-url");
   if (!sources.length) return null;
@@ -356,7 +347,6 @@ function SourceChips({ parts }: { parts: AnyPart[] }) {
   );
 }
 
-// ── Markdown renderer ─────────────────────────────────────────────────────────
 const MD: React.ComponentProps<typeof ReactMarkdown>["components"] = {
   pre: ({ children }) => <pre>{children}</pre>,
   code: ({ className, children }: { className?: string; children?: React.ReactNode }) => {
@@ -394,12 +384,11 @@ const MD: React.ComponentProps<typeof ReactMarkdown>["components"] = {
     </a>
   ),
   img: ({ src, alt }: { src?: string | Blob; alt?: string }) => (
-    // eslint-disable-next-line @next/next/no-img-element
+
     <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} className="msg-attachment-img" style={{ display: "block", marginTop: 8 }} />
   ),
 };
 
-// ── Main component ────────────────────────────────────────────────────────────
 type Props = {
   role: "user" | "assistant" | "system";
   parts?: AnyPart[];
@@ -436,19 +425,16 @@ export function MessageBubble({
   const imageAttachments = attachments?.filter((a) => isImage(a.mimeType)) ?? [];
   const fileAttachments  = attachments?.filter((a) => !isImage(a.mimeType)) ?? [];
 
-  // Separate into process parts (timeline) and text parts (response body)
   const processParts = parts?.filter(
     (p) => p.type === "reasoning" || isToolPart(p)
-    // skip step-start — timeline itself provides separation
+
   ) ?? [];
 
   const textParts = (parts?.filter((p) => p.type === "text") as TextPart[] | undefined) ?? [];
 
-  // For DB-loaded messages that have no live parts, synthetic reasoning
   const hasLiveReasoning = parts?.some((p) => p.type === "reasoning") ?? false;
   const syntheticReasoning = !hasLiveReasoning && reasoning ? reasoning : null;
 
-  // Combined text for simple render (no parts at all)
   const hasRichParts = processParts.length > 0 || textParts.length > 0;
 
   return (
@@ -487,17 +473,15 @@ export function MessageBubble({
             )}
           </div>
 
-          {/* Image attachments */}
           {imageAttachments.length > 0 && (
             <div className="msg-attachments" style={{ marginBottom: 10 }}>
               {imageAttachments.map((att) => (
-                // eslint-disable-next-line @next/next/no-img-element
+
                 <img key={att.id} src={`/api/attachments/${att.id}`} alt={att.filename} className="msg-attachment-img" />
               ))}
             </div>
           )}
 
-          {/* File attachments */}
           {fileAttachments.length > 0 && (
             <div className="msg-attachments" style={{ marginBottom: 10 }}>
               {fileAttachments.map((att) => (
@@ -512,16 +496,15 @@ export function MessageBubble({
             </div>
           )}
 
-          {/* Content */}
           <div className="text">
             {isUser ? (
               <p style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{text}</p>
             ) : (
               <>
-                {/* ── Process timeline ── */}
+
                 {(processParts.length > 0 || syntheticReasoning) && (
                   <div className="msg-timeline">
-                    {/* DB-loaded reasoning injected as synthetic node */}
+
                     {syntheticReasoning && (
                       <TimelineNode label="thinking" meta={`${syntheticReasoning.length.toLocaleString()} chars`} status="done">
                         <div className="tl-thinking-text">{syntheticReasoning}</div>
@@ -539,7 +522,6 @@ export function MessageBubble({
                   </div>
                 )}
 
-                {/* ── Text response ── */}
                 {hasRichParts ? (
                   textParts.length > 0 ? (
                     <>
@@ -554,13 +536,12 @@ export function MessageBubble({
                     </>
                   ) : null
                 ) : (
-                  // No parts at all — fall back to plain text render
+
                   text.trim() ? (
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD}>{text}</ReactMarkdown>
                   ) : null
                 )}
 
-                {/* Source citations */}
                 {parts && <SourceChips parts={parts} />}
 
                 {streaming && <span className="cursor" />}

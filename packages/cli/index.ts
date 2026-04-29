@@ -1,17 +1,5 @@
 #!/usr/bin/env bun
-export {}; // make this a module so top-level await is allowed
-/**
- * openmlc CLI
- *
- * Usage:
- *   openmlc chat "prompt" [--model <model-id>]
- *   openmlc chat --model <model-id>          (reads stdin)
- *   openmlc swarm "task"
- *
- * Environment:
- *   OPENMLC_BASE_URL   e.g. http://localhost:3000
- *   OPENMLC_API_KEY    your openmlc API key
- */
+export {};
 
 const BASE_URL = process.env.OPENMLC_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
 const API_KEY = process.env.OPENMLC_API_KEY ?? "";
@@ -49,7 +37,6 @@ async function cmdChat(args: string[]) {
   let model = "gpt-4o";
   let prompt = "";
 
-  // Parse flags
   const rest: string[] = [];
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--model" || args[i] === "-m") {
@@ -62,7 +49,7 @@ async function cmdChat(args: string[]) {
   prompt = rest.join(" ").trim();
 
   if (!prompt) {
-    // Read from stdin
+
     if (process.stdin.isTTY) {
       process.stderr.write("prompt> ");
     }
@@ -118,7 +105,7 @@ async function cmdChat(args: string[]) {
         const text = chunk.choices?.[0]?.delta?.content;
         if (text) process.stdout.write(text);
       } catch {
-        // skip malformed chunks
+
       }
     }
   }
@@ -135,7 +122,7 @@ async function cmdSwarm(args: string[]) {
     headers: {
       "content-type": "application/json",
       "authorization": `Bearer ${API_KEY}`,
-      // swarm uses session auth — API key passed as x-api-key header as fallback
+
       "x-api-key": API_KEY,
     },
     body: JSON.stringify({ prompt: task }),
@@ -146,7 +133,6 @@ async function cmdSwarm(args: string[]) {
     die(`swarm API error ${res.status}: ${text}`);
   }
 
-  // Swarm streams SSE — read and print agent events
   if (!res.body) die("no response body");
 
   const reader = res.body.getReader();
@@ -187,15 +173,13 @@ async function cmdSwarm(args: string[]) {
           process.stderr.write(`[swarm] ${event.status}\n`);
         }
       } catch {
-        // skip
+
       }
     }
   }
 
   process.stdout.write("\n");
 }
-
-// ── main ───────────────────────────────────────────────────────────────────────
 
 const argv = process.argv.slice(2);
 const cmd = argv[0];

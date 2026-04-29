@@ -76,7 +76,6 @@ export function ChatComposer({
     el.style.height = Math.min(el.scrollHeight, 200) + "px";
   }, [input]);
 
-  // Close reasoning popover on outside click / escape.
   useEffect(() => {
     if (!reasoningOpen) return;
     function onDoc(e: MouseEvent) {
@@ -97,7 +96,7 @@ export function ChatComposer({
 
   function onKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key !== "Enter" || e.shiftKey) return;
-    // Swarm mode accepts plain Enter OR Cmd/Ctrl+Enter
+
     const isSwarmTrigger = swarmMode && (e.metaKey || e.ctrlKey);
     const isNormalSend = !e.metaKey && !e.ctrlKey && !e.altKey;
     if (isNormalSend || isSwarmTrigger) {

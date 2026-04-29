@@ -11,7 +11,7 @@ export const urlReadDefinition: ToolDefinition<"url_read"> = {
   name: "url_read",
   displayName: "Read URL",
   verb: "Reading the page",
-  // Always available; no key required.
+
   isEnabled: () => true,
   build: () =>
     tool({

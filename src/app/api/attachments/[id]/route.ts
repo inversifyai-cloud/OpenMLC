@@ -3,7 +3,6 @@ import { join } from "path";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
 
-// GET /api/attachments/[id] — serve the raw file (auth-gated)
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -31,7 +30,6 @@ export async function GET(
   }
 }
 
-// DELETE /api/attachments/[id]
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -49,7 +47,7 @@ export async function DELETE(
   try {
     await unlink(join(process.cwd(), att.path));
   } catch {
-    // file might already be gone
+
   }
 
   return new Response(null, { status: 204 });

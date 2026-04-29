@@ -49,11 +49,10 @@ function relTime(iso: string): string {
 type Bucket = { label: string; rows: ConvExt[] };
 
 function bucketize(rows: ConvExt[], activeFolder: string | null): Bucket[] {
-  // Pinned always first regardless of folder filter
+
   const pinned = rows.filter((r) => r.pinned && !r.archived);
   const rest = rows.filter((r) => !r.pinned && !r.archived);
 
-  // Apply folder filter to non-pinned
   const filtered = activeFolder
     ? rest.filter((r) => r.folderId === activeFolder)
     : rest;
@@ -99,7 +98,6 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
   const [shareToast, setShareToast] = useState<string | null>(null);
 
-  // Load folders
   useEffect(() => {
     fetch("/api/folders")
       .then((r) => r.ok ? r.json() : null)
@@ -119,7 +117,6 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
     return () => { cancelled = true; };
   }, [activeId]);
 
-  // Cmd+K handler
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {

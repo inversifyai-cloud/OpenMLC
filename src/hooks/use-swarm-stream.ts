@@ -2,9 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// ---------- types ----------
-// Locally declared to be safe even if `src/lib/swarm/types.ts` shifts.
-
 export type SwarmReasoningEffort = "low" | "medium" | "high";
 
 export type SwarmAgentSpec = {
@@ -78,10 +75,8 @@ export type SwarmStartInput = {
   };
 };
 
-// ---------- helpers ----------
-
 function parseSseChunks(buffer: string): { events: SwarmEvent[]; remainder: string } {
-  // SSE frames are delimited by `\n\n`. Each frame may have multiple `data:` lines.
+
   const events: SwarmEvent[] = [];
   let remainder = buffer;
   let idx = remainder.indexOf("\n\n");
@@ -97,7 +92,7 @@ function parseSseChunks(buffer: string): { events: SwarmEvent[]; remainder: stri
       try {
         events.push(JSON.parse(payload) as SwarmEvent);
       } catch {
-        // ignore malformed frame
+
       }
     }
     idx = remainder.indexOf("\n\n");
@@ -118,7 +113,7 @@ function applyEventToAgents(prev: AgentRow[], evt: SwarmEvent): AgentRow[] {
         output: "",
         reasoning: "",
       }));
-      // Preserve any state already accumulated for matching IDs.
+
       const byId = new Map(prev.map((a) => [a.id, a] as const));
       return incoming.map((row) => {
         const existing = byId.get(row.id);
@@ -162,8 +157,6 @@ function applyEventToAgents(prev: AgentRow[], evt: SwarmEvent): AgentRow[] {
       return prev;
   }
 }
-
-// ---------- main hook (live POST stream) ----------
 
 export function useSwarmStream() {
   const [runId, setRunId] = useState<string | null>(null);
@@ -243,7 +236,7 @@ export function useSwarmStream() {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
-        // eslint-disable-next-line no-constant-condition
+
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
@@ -252,7 +245,7 @@ export function useSwarmStream() {
           buffer = parsed.remainder;
           for (const evt of parsed.events) handleEvent(evt);
         }
-        // flush any trailing complete frame
+
         if (buffer.trim().length > 0) {
           const final = parseSseChunks(buffer + "\n\n");
           for (const evt of final.events) handleEvent(evt);
@@ -277,8 +270,6 @@ export function useSwarmStream() {
 
   return { runId, plan, agents, synthesis, status, error, start, reset };
 }
-
-// ---------- snapshot + resume hook ----------
 
 type SnapshotResponse = {
   run: {
@@ -331,7 +322,7 @@ function parsePlan(raw: string | null): SwarmPlan | null {
       };
     }
   } catch {
-    // not JSON — treat raw text as rationale
+
     return { agents: [], rationale: raw };
   }
   return null;
@@ -374,7 +365,6 @@ export function useSwarmRun(runId: string | null | undefined): UseSwarmRunResult
   const [error, setError] = useState<string | null>(null);
   const esRef = useRef<EventSource | null>(null);
 
-  // event handler shared with live stream applier
   const handleEvent = useCallback((evt: SwarmEvent) => {
     switch (evt.type) {
       case "plan":
@@ -474,7 +464,7 @@ export function useSwarmRun(runId: string | null | undefined): UseSwarmRunResult
               const data = JSON.parse(ev.data) as SwarmEvent;
               handleEvent(data);
             } catch {
-              // ignore
+
             }
           };
           es.onerror = () => {

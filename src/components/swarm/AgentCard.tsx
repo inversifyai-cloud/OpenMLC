@@ -62,14 +62,12 @@ export function AgentCard({ agent }: Props) {
   const [reasoningOpen, setReasoningOpen] = useState(true);
   const [, setTick] = useState(0);
 
-  // Live timer ticker for running agents.
   useEffect(() => {
     if (agent.status !== "running") return;
     const id = window.setInterval(() => setTick((n) => n + 1), 250);
     return () => window.clearInterval(id);
   }, [agent.status]);
 
-  // Auto-scroll output as it streams.
   useEffect(() => {
     const el = bodyRef.current;
     if (!el) return;

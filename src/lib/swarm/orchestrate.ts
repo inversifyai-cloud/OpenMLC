@@ -25,7 +25,7 @@ export async function orchestrateSwarm(opts: {
   const bus = getOrCreateBus(opts.swarmRunId);
 
   try {
-    // 1. Plan
+
     await db.swarmRun.update({ where: { id: opts.swarmRunId }, data: { status: "planning" } });
     const plan = await planSwarm({
       profileId: opts.profileId,
@@ -42,7 +42,6 @@ export async function orchestrateSwarm(opts: {
       data: { plan: JSON.stringify(plan) },
     });
 
-    // 2. Resolve agents to (provider, model)
     const resolvedAgents = await pickAgentSpecs({
       profileId: opts.profileId,
       agents: plan.agents,
@@ -50,7 +49,6 @@ export async function orchestrateSwarm(opts: {
       reasoningEffort: opts.config.reasoningEffort,
     });
 
-    // 3. Persist SwarmAgent rows
     const agentRows = await Promise.all(
       resolvedAgents.map((a) =>
         db.swarmAgent.create({
@@ -77,7 +75,6 @@ export async function orchestrateSwarm(opts: {
       })),
     });
 
-    // 4. Run all agents in parallel
     await db.swarmRun.update({ where: { id: opts.swarmRunId }, data: { status: "running" } });
 
     const agentSystemPrompt = `You are one expert agent in a small swarm. Your specific role: {ROLE}. Your specific task: {TASK}\n\nThe user's original request is provided below for context. Focus your output on YOUR task only — other agents are handling other facets in parallel. Be concise, factual, and structured. Don't preface or hedge.`;
@@ -106,7 +103,6 @@ export async function orchestrateSwarm(opts: {
       throw new Error("all agents failed");
     }
 
-    // 5. Synthesis
     bus.emit({ type: "synthesis_start" });
     await db.swarmRun.update({ where: { id: opts.swarmRunId }, data: { status: "synthesizing" } });
 
@@ -149,7 +145,6 @@ export async function orchestrateSwarm(opts: {
     });
     bus.emit({ type: "complete", finalOutput });
 
-    // Persist synthesis to conversation if this run is linked to one
     if (opts.conversationId && finalOutput) {
       try {
         await db.message.create({

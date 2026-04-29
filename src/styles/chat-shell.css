@@ -1,7 +1,4 @@
-/* ============================================================
-   OpenMLC chat shell — Operator's Notebook
-   Paper · ink · phosphor green · sharp 1px hairlines
-   ============================================================ */
+
 
 .chat-app {
   display: grid;
@@ -12,7 +9,6 @@
   overflow: hidden;
 }
 
-/* ============== TOP RAIL ============== */
 .topbar {
   grid-column: 1 / -1;
   display: flex;
@@ -58,7 +54,6 @@
 .ico-btn:focus-visible { outline: 2px solid var(--stroke-focus); outline-offset: 1px; }
 .ico-btn svg { width: 14px; height: 14px; }
 
-/* ============== SIDEBAR ============== */
 .sidebar {
   background: var(--bg-app);
   border-right: 1px solid var(--stroke-1);
@@ -231,7 +226,6 @@
   text-overflow: ellipsis;
 }
 
-/* ============== MAIN ============== */
 .main {
   background: var(--bg-canvas);
   display: flex;
@@ -289,7 +283,6 @@
   background: rgba(22, 163, 74, 0.06);
 }
 
-/* ============== MESSAGES ============== */
 .messages {
   flex: 1;
   overflow-y: auto;
@@ -324,7 +317,6 @@
 .msg-wrap { max-width: 760px; margin: 0 auto; padding: 0 32px 28px; }
 .msg { display: flex; gap: 14px; align-items: flex-start; }
 
-/* SQUARE avatars — distinctive */
 .avatar {
   width: 26px;
   height: 26px;
@@ -378,7 +370,6 @@
 }
 .body-head .meta .live { color: var(--signal-ok); }
 
-/* Branch button */
 .branch-btn {
   display: inline-flex;
   align-items: center;
@@ -489,7 +480,6 @@
 .msg-tools button:hover { background: var(--surface-hover); color: var(--fg-1); }
 .msg-tools svg { width: 11px; height: 11px; }
 
-/* ── Message edit / delete tool buttons (user messages) ── */
 .msg-edit-tool-btn {
   border: 1px solid var(--stroke-1);
   background: transparent;
@@ -515,7 +505,6 @@
   background: color-mix(in srgb, var(--signal-err, #e05) 12%, transparent);
 }
 
-/* ── Inline edit panel ── */
 .msg-edit-wrap {
   display: flex;
   flex-direction: column;
@@ -579,7 +568,6 @@
 }
 .msg-edit-btn--cancel { color: var(--fg-4); }
 
-/* ============== COMPOSER ============== */
 .composer-wrap {
   position: absolute;
   left: 0;
@@ -714,7 +702,6 @@
 }
 .tool-pill svg { width: 11px; height: 11px; }
 
-/* SHARP rectangular send button — not a circle */
 .send-btn {
   margin-left: auto;
   height: 28px;
@@ -744,7 +731,6 @@
 }
 .send-btn.stop svg { color: var(--fg-1); }
 
-/* scrollbars — hairline */
 .chat-app *::-webkit-scrollbar { width: 6px; height: 6px; }
 .chat-app *::-webkit-scrollbar-thumb { background: var(--stroke-2); border-radius: 0; }
 .chat-app *::-webkit-scrollbar-thumb:hover { background: var(--stroke-3); }
@@ -760,9 +746,6 @@
 
 .side-search input { caret-color: var(--fg-accent); }
 
-/* ============================================================
-   MODEL PICKER — trigger button
-   ============================================================ */
 .model-pick-btn {
   display: inline-flex;
   align-items: center;
@@ -790,9 +773,6 @@
 .model-pick-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .model-pick-btn svg { color: var(--fg-3); flex-shrink: 0; }
 
-/* ============================================================
-   MODEL PICKER — modal
-   ============================================================ */
 .model-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -968,9 +948,6 @@
   .model-modal-backdrop, .model-modal { animation: none; }
 }
 
-/* ============================================================
-   REASONING TOGGLE
-   ============================================================ */
 .reasoning-wrap { position: relative; display: inline-flex; }
 .reasoning-btn {
   display: inline-flex;
@@ -1071,9 +1048,6 @@
   .reasoning-popover { animation: none; }
 }
 
-/* ============================================================
-   THINKING BLOCK
-   ============================================================ */
 .thinking-block {
   display: block;
   margin: 0 0 10px;
@@ -1132,9 +1106,6 @@
   border-top: 1px solid var(--stroke-1);
 }
 
-/* ============================================================
-   PROCESS TIMELINE
-   ============================================================ */
 .msg-timeline { border-left: 1px solid var(--stroke-2); margin: 0 0 14px 5px; padding: 2px 0; }
 .tl-node { position: relative; padding-left: 18px; }
 .tl-node::before {
@@ -1221,7 +1192,6 @@
   font-style: italic;
 }
 
-/* ── Web search results ── */
 .web-result { padding: 8px 0; border-bottom: 1px solid var(--stroke-1); }
 .web-result:last-child { border-bottom: none; padding-bottom: 0; }
 .web-result:first-child { padding-top: 0; }
@@ -1239,7 +1209,6 @@
 .web-result-domain { font-family: var(--font-mono); font-size: 10px; color: var(--fg-4); flex-shrink: 0; }
 .web-result-snippet { font-size: 12px; color: var(--fg-3); line-height: 1.55; margin: 0; }
 
-/* ── Code exec ── */
 .code-exec-bar {
   display: flex;
   align-items: center;
@@ -1284,7 +1253,6 @@
   margin-bottom: 3px;
 }
 
-/* ── Source chips ── */
 .source-chips {
   display: flex;
   align-items: center;
@@ -1317,8 +1285,6 @@
 }
 .source-chip:hover { border-color: var(--stroke-focus); color: var(--fg-accent); }
 
-
-/* ============ KB UI ============ */
 .kb-hud {
   display: flex;
   align-items: center;
@@ -1552,9 +1518,6 @@
 }
 .kb-icon-btn:hover { color: var(--fg-1); background: var(--surface-hover); border-color: var(--stroke-2); }
 
-/* ============================================================
-   SWARM
-   ============================================================ */
 .swarm-shell {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -1835,7 +1798,6 @@
   word-wrap: break-word;
 }
 
-/* ---- swarm settings form ---- */
 .swarm-config { display: flex; flex-direction: column; gap: 28px; max-width: 760px; }
 .swarm-config-row {
   display: grid;
@@ -1921,9 +1883,6 @@
 
 .swarm-config-foot { display: flex; align-items: center; gap: 12px; padding-top: 4px; }
 
-/* ============================================================
-   M8.1 — COMMAND PALETTE
-   ============================================================ */
 .cp-backdrop {
   position: fixed;
   inset: 0;
@@ -2035,9 +1994,6 @@
   margin-right: 3px;
 }
 
-/* ============================================================
-   M8.1 — FOLDER MANAGER
-   ============================================================ */
 .fm-wrap {
   margin: 0 10px 4px;
 }
@@ -2171,9 +2127,6 @@
 }
 .fm-add-btn:hover { color: var(--fg-accent); }
 
-/* ============================================================
-   M8.1 — CONV CONTEXT MENU
-   ============================================================ */
 .ccm {
   min-width: 190px;
   background: var(--bg-elevated);
@@ -2219,7 +2172,6 @@
 .ccm-item svg { width: 12px; height: 12px; flex-shrink: 0; }
 .ccm-dot { width: 6px; height: 6px; border-radius: 1px; flex-shrink: 0; }
 
-/* pinned conv indicator */
 .conv--pinned .title::before {
   content: "·";
   color: var(--fg-accent);
@@ -2227,7 +2179,6 @@
   font-weight: 700;
 }
 
-/* share toast */
 .share-toast {
   position: fixed;
   bottom: 24px;
@@ -2256,9 +2207,6 @@
   max-width: 300px;
 }
 
-/* ============================================================
-   SYSTEM PROMPT — header trigger + popover
-   ============================================================ */
 .sysprompt-wrap { position: relative; display: inline-flex; }
 .sysprompt-btn {
   display: inline-flex;

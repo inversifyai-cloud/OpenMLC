@@ -1,15 +1,7 @@
 import type { Model, ModelCapability } from "@/types/chat";
 
-/**
- * Live OpenRouter catalog fetcher.
- *
- * OpenRouter exposes its full model directory at https://openrouter.ai/api/v1/models
- * with no auth required. We fetch + normalize once per TTL and serve from a
- * module-scope cache.
- */
-
 const ENDPOINT = "https://openrouter.ai/api/v1/models";
-const TTL_MS = 60 * 60 * 1000; // 1 hour
+const TTL_MS = 60 * 60 * 1000;
 
 type OpenRouterModel = {
   id: string;
@@ -47,7 +39,7 @@ function deriveCostTier(or: OpenRouterModel): "free" | "low" | "medium" | "high"
   const promptStr = or.pricing?.prompt ?? "0";
   const promptPrice = parseFloat(promptStr);
   if (!isFinite(promptPrice) || promptPrice === 0) return "free";
-  // Pricing is per token; crude buckets that match the curated registry.
+
   if (promptPrice < 0.000001) return "low";
   if (promptPrice < 0.00001) return "medium";
   return "high";
@@ -55,16 +47,11 @@ function deriveCostTier(or: OpenRouterModel): "free" | "low" | "medium" | "high"
 
 function shortDesc(d?: string): string {
   if (!d) return "";
-  // First sentence, capped at ~140 chars.
+
   const firstSentence = d.split(/(?<=[.!?])\s/)[0] ?? d;
   return firstSentence.slice(0, 140).replace(/\s+/g, " ").trim();
 }
 
-/**
- * Vendors we have direct native integration for. Models from these vendors
- * should NOT appear in the OpenRouter catalog — they live under their own
- * provider in the picker.
- */
 const NATIVELY_INTEGRATED_VENDORS = new Set([
   "openai",
   "anthropic",
@@ -72,24 +59,16 @@ const NATIVELY_INTEGRATED_VENDORS = new Set([
   "xai",
 ]);
 
-/**
- * Decide whether an OpenRouter model belongs in the OpenRouter dynamic catalog.
- * Strips out anything we have a direct API path for so the picker doesn't show
- * "GPT-4o" twice (once under OpenAI, once under OpenRouter).
- */
 function shouldKeepInOrCatalog(orModelId: string): boolean {
   const slash = orModelId.indexOf("/");
   if (slash === -1) return true;
-  // Strip leading "~" used for OpenRouter alias/shortcut entries
-  // (e.g. "~anthropic/claude-haiku-latest" → vendor "anthropic").
+
   let vendor = orModelId.slice(0, slash).toLowerCase();
   if (vendor.startsWith("~")) vendor = vendor.slice(1);
   const rest = orModelId.slice(slash + 1).toLowerCase();
 
   if (NATIVELY_INTEGRATED_VENDORS.has(vendor)) return false;
 
-  // Google: we have direct Gemini access, so strip gemini-* and gemma is fine
-  // (Gemma isn't on the Google generativelanguage API, only on OpenRouter).
   if (vendor === "google" && rest.startsWith("gemini")) return false;
 
   return true;
@@ -111,7 +90,7 @@ function transform(or: OpenRouterModel): Model {
 async function fetchFromOpenRouter(): Promise<Model[]> {
   const res = await fetch(ENDPOINT, {
     headers: { accept: "application/json" },
-    // 30s timeout via AbortSignal.timeout (Node 18+/Next 16)
+
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) {
@@ -137,7 +116,7 @@ export async function getOpenRouterCatalog(): Promise<Model[]> {
     })
     .catch((err) => {
       console.warn("[openrouter] catalog fetch failed:", err?.message ?? err);
-      // Serve stale cache if present, otherwise empty.
+
       return cache?.models ?? [];
     })
     .finally(() => {
@@ -146,7 +125,6 @@ export async function getOpenRouterCatalog(): Promise<Model[]> {
   return inflight;
 }
 
-/** Force a refresh on the next call. */
 export function invalidateOpenRouterCatalog(): void {
   cache = null;
 }

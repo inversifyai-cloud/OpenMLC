@@ -17,7 +17,7 @@ export const kbSearchDefinition: ToolDefinition<"kb_search"> = {
   name: "kb_search",
   displayName: "Searched knowledge base",
   verb: "Searching knowledge base",
-  // Only enable if the user opted in AND has an OpenAI key (needed for embeddings).
+
   isEnabled: ({ userPrefs, ctx }) =>
     userPrefs.knowledgeBaseEnabled && !!ctx.resolvedKeys.openai,
   build: (ctx) =>

@@ -101,8 +101,6 @@ export async function POST(req: Request) {
 
   const { provider, key, baseUrl } = parsed.data;
 
-  // Ollama: key field is optional (we mostly need the baseUrl).
-  // Other providers: require a key.
   if (provider !== "ollama" && (!key || key.trim().length < 4)) {
     return NextResponse.json({ error: "key required" }, { status: 400 });
   }

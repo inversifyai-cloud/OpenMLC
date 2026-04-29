@@ -95,7 +95,6 @@ export function ModelPicker({ value, onChange }: Props) {
 
   useEffect(() => setRecents(loadRecents()), []);
 
-  // Load full catalog on first open
   useEffect(() => {
     if (!open) return;
     setHighlighted(0);
@@ -108,10 +107,9 @@ export function ModelPicker({ value, onChange }: Props) {
         .finally(() => setLoading(false));
     }
     setTimeout(() => inputRef.current?.focus(), 30);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [open]);
 
-  // Lock body scroll when open
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -156,12 +154,11 @@ export function ModelPicker({ value, onChange }: Props) {
       .map((p) => ({ providerId: p, label: PROVIDER_LABEL[p] ?? p, models: groups[p] }));
   }, [chatModels, query]);
 
-  // Flat list for keyboard nav
   const flatList = useMemo(() => {
     const out: Model[] = [];
     if (!query) out.push(...recentModels);
     for (const g of filteredGroups) out.push(...g.models);
-    // Deduplicate (recents may overlap with groups)
+
     const seen = new Set<string>();
     return out.filter((m) => {
       if (seen.has(m.id)) return false;
@@ -190,9 +187,8 @@ export function ModelPicker({ value, onChange }: Props) {
       const m = flatList[highlighted];
       if (m) pick(m);
     }
-  }, [flatList, highlighted]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [flatList, highlighted]);
 
-  // Scroll highlighted into view
   useEffect(() => {
     if (!listRef.current) return;
     const el = listRef.current.querySelector(`[data-idx="${highlighted}"]`) as HTMLElement | null;
@@ -201,7 +197,7 @@ export function ModelPicker({ value, onChange }: Props) {
 
   return (
     <>
-      {/* Trigger button */}
+
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -216,12 +212,10 @@ export function ModelPicker({ value, onChange }: Props) {
         </svg>
       </button>
 
-      {/* Modal portal */}
       {open && typeof window !== "undefined" && createPortal(
         <div className="model-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
           <div className="model-modal glass-strong" role="dialog" aria-modal aria-label="Select model" onKeyDown={handleKeyDown}>
 
-            {/* Header */}
             <div className="model-modal-head">
               <HudLabel>select model</HudLabel>
               <div className="model-modal-search">
@@ -246,7 +240,6 @@ export function ModelPicker({ value, onChange }: Props) {
               </button>
             </div>
 
-            {/* Body */}
             <div className="model-modal-body" ref={listRef}>
               {recentModels.length > 0 && !query && (
                 <div className="model-modal-section">
@@ -303,7 +296,6 @@ export function ModelPicker({ value, onChange }: Props) {
               )}
             </div>
 
-            {/* Footer hint */}
             <div className="model-modal-foot">
               <span><kbd>↑↓</kbd> navigate</span>
               <span><kbd>↵</kbd> select</span>

@@ -9,7 +9,7 @@ import { getOrCreateBus } from "@/lib/swarm/stream-bus";
 const bodySchema = z.object({
   prompt: z.string().min(1).max(8000),
   conversationId: z.string().optional(),
-  // Allow per-request overrides of swarm config (otherwise fall back to user's saved config)
+
   override: z
     .object({
       minAgents: z.number().int().min(1).max(10).optional(),
@@ -48,7 +48,6 @@ export async function POST(req: NextRequest) {
   }
   const { prompt, conversationId, override } = parsed.data;
 
-  // Load or create the SwarmConfig for this profile
   let config = await db.swarmConfig.findUnique({ where: { profileId } });
   if (!config) {
     config = await db.swarmConfig.create({
@@ -79,7 +78,6 @@ export async function POST(req: NextRequest) {
     supervisorModel: override?.supervisorModel ?? config.supervisorModel,
   };
 
-  // If linked to a conversation, persist user message first
   if (conversationId) {
     try {
       const conv = await db.conversation.findUnique({
@@ -105,7 +103,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Create the SwarmRun
   const run = await db.swarmRun.create({
     data: {
       profileId,
@@ -115,10 +112,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Eagerly create the bus so the SSE stream we return is the same one the orchestrator uses
   const bus = getOrCreateBus(run.id);
 
-  // Start orchestration in the background — DO NOT await
   orchestrateSwarm({
     profileId,
     swarmRunId: run.id,
@@ -129,7 +124,6 @@ export async function POST(req: NextRequest) {
     console.error("[swarm] orchestrate threw outer", err);
   });
 
-  // Return SSE stream
   return new Response(bus.toReadableStream(), {
     headers: {
       "Content-Type": "text/event-stream",
@@ -140,7 +134,6 @@ export async function POST(req: NextRequest) {
   });
 }
 
-// GET /api/swarm — list user's recent swarm runs (for /swarm landing page)
 export async function GET() {
   const session = await getSession();
   if (!session.profileId) {

@@ -1,4 +1,4 @@
-/* ── Voice UI: waveform bars + button states ─────────────────────────── */
+
 
 @keyframes voice-bar-pulse {
   0%, 100% { transform: scaleY(0.2); opacity: 0.4; }
@@ -21,7 +21,6 @@
   animation: voice-bar-pulse 800ms ease-in-out infinite;
 }
 
-/* stagger each bar */
 .voice-waveform-bar:nth-child(1)  { animation-delay:   0ms; }
 .voice-waveform-bar:nth-child(2)  { animation-delay:  25ms; }
 .voice-waveform-bar:nth-child(3)  { animation-delay:  50ms; }
@@ -54,8 +53,6 @@
 .voice-waveform-bar:nth-child(30) { animation-delay: 125ms; }
 .voice-waveform-bar:nth-child(31) { animation-delay: 100ms; }
 .voice-waveform-bar:nth-child(32) { animation-delay:  75ms; }
-
-/* ── Mic / Speak shared button base ──────────────────────────────────── */
 
 .voice-btn {
   display: inline-flex;
@@ -101,8 +98,6 @@
   color: var(--blue-500, #60a5fa);
   background: rgba(96, 165, 250, 0.06);
 }
-
-/* ── REC indicator dot ───────────────────────────────────────────────── */
 
 .voice-rec-dot {
   width: 6px;

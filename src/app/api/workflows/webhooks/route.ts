@@ -16,7 +16,7 @@ export async function GET() {
   const webhooks = await db.webhook.findMany({
     where: { profileId: session.profileId },
     orderBy: { createdAt: "desc" },
-    // Never return secret in list
+
     select: { id: true, slug: true, kind: true, presetPayload: true, createdAt: true },
   });
 
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
   const { kind, presetPayload } = parsed.data;
 
-  const slug = randomBytes(6).toString("hex"); // 12 hex chars
+  const slug = randomBytes(6).toString("hex");
   const secret = randomBytes(32).toString("hex");
 
   const webhook = await db.webhook.create({
@@ -44,11 +44,10 @@ export async function POST(req: Request) {
       slug,
       kind,
       presetPayload: JSON.stringify(presetPayload),
-      secret, // plain text, self-hosted BYOK — per plan
+      secret,
     },
   });
 
-  // Return secret ONCE in creation response
   return NextResponse.json({
     webhook: {
       id: webhook.id,
