@@ -60,17 +60,16 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV DATABASE_URL="file:/data/openmlc.db"
 
-# Next.js standalone bundle includes a minimal node_modules tree
-COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=build --chown=nextjs:nodejs /app/.next/static     ./.next/static
-COPY --from=build --chown=nextjs:nodejs /app/public           ./public
-# Prisma engines + schema (standalone doesn't pick these up automatically).
-# Copy the whole @prisma/ namespace so transitive deps like @prisma/debug are included.
-COPY --from=build --chown=nextjs:nodejs /app/prisma                       ./prisma
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/.prisma         ./node_modules/.prisma
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/@prisma         ./node_modules/@prisma
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/prisma          ./node_modules/prisma
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/better-sqlite3  ./node_modules/better-sqlite3
+# Ship the built app + full production node_modules. The Next.js standalone
+# output traces ESM-only versions of some packages (e.g. @prisma/debug only
+# gets index.mjs), which then collide with prisma's CJS resolver at runtime.
+# Copying the unminified built app + node_modules avoids the trace problem.
+COPY --from=build --chown=nextjs:nodejs /app/.next         ./.next
+COPY --from=build --chown=nextjs:nodejs /app/public        ./public
+COPY --from=build --chown=nextjs:nodejs /app/package.json  ./package.json
+COPY --from=build --chown=nextjs:nodejs /app/next.config.ts ./next.config.ts
+COPY --from=build --chown=nextjs:nodejs /app/prisma        ./prisma
+COPY --from=build --chown=nextjs:nodejs /app/node_modules  ./node_modules
 
 # Persisted volume for SQLite + uploads
 RUN mkdir -p /data /app/uploads && chown -R nextjs:nodejs /data /app/uploads
@@ -86,7 +85,7 @@ node node_modules/prisma/build/index.js db push \
   --skip-generate \
   --accept-data-loss
 echo "[entrypoint] starting next.js"
-exec node server.js
+exec node node_modules/next/dist/bin/next start -H "${HOSTNAME}" -p "${PORT}"
 EOF
 RUN chmod +x /app/entrypoint.sh
 
