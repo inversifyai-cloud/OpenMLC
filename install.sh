@@ -70,8 +70,8 @@ GH_USER=$(gh api user -q .login 2>/dev/null) \
 SCOPES=$(gh api /user --include 2>/dev/null | grep -i "^x-oauth-scopes:" | cut -d' ' -f2-)
 if ! echo "$SCOPES" | grep -q "read:packages"; then
   step "refreshing GitHub token with read:packages scope…"
-  gh auth refresh -s read:packages \
-    || fail "gh auth refresh failed. try running 'gh auth login' manually."
+  gh auth refresh -h github.com -s read:packages \
+    || fail "gh auth refresh failed. try running 'gh auth refresh -h github.com -s read:packages' manually."
 fi
 
 step "logging into ghcr.io as ${GH_USER}…"
