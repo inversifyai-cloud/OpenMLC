@@ -59,8 +59,12 @@ echo
 
 if ! gh auth status >/dev/null 2>&1; then
   step "logging into GitHub…"
-  gh auth login --git-protocol https --web \
+  gh auth login --git-protocol https --web --scopes read:packages \
     || fail "gh auth login failed. re-run and follow the prompts."
+elif ! gh auth token | docker login ghcr.io -u "$(gh api user -q .login)" --password-stdin >/dev/null 2>&1; then
+  step "refreshing GitHub token with read:packages scope…"
+  gh auth refresh -s read:packages \
+    || fail "gh auth refresh failed. try running 'gh auth login' manually."
 fi
 
 GH_USER=$(gh api user -q .login 2>/dev/null) \
