@@ -2,6 +2,9 @@
 # OpenMLC installer — one-shot setup for `docker compose up`.
 # Usage:  curl -sSL https://raw.githubusercontent.com/inversifyai-cloud/OpenMLC/main/install.sh | bash
 #         (or download and run with `bash install.sh`)
+#
+# License: OpenMLC Fair Source License v1.0 — Apache 2.0 future (6-year DOSP).
+# See LICENSE.md and LICENSING.md in the repo for details.
 
 set -euo pipefail
 
