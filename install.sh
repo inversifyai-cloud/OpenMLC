@@ -61,14 +61,18 @@ if ! gh auth status >/dev/null 2>&1; then
   step "logging into GitHub…"
   gh auth login --git-protocol https --web --scopes read:packages \
     || fail "gh auth login failed. re-run and follow the prompts."
-elif ! gh auth token | docker login ghcr.io -u "$(gh api user -q .login)" --password-stdin >/dev/null 2>&1; then
-  step "refreshing GitHub token with read:packages scope…"
-  gh auth refresh -s read:packages \
-    || fail "gh auth refresh failed. try running 'gh auth login' manually."
 fi
 
 GH_USER=$(gh api user -q .login 2>/dev/null) \
   || fail "could not get GitHub username. try 'gh auth status' to check your session."
+
+# ensure token has read:packages scope — docker login succeeds without it but pull fails
+SCOPES=$(gh api /user --include 2>/dev/null | grep -i "^x-oauth-scopes:" | cut -d' ' -f2-)
+if ! echo "$SCOPES" | grep -q "read:packages"; then
+  step "refreshing GitHub token with read:packages scope…"
+  gh auth refresh -s read:packages \
+    || fail "gh auth refresh failed. try running 'gh auth login' manually."
+fi
 
 step "logging into ghcr.io as ${GH_USER}…"
 gh auth token | docker login ghcr.io -u "$GH_USER" --password-stdin >/dev/null 2>&1 \
