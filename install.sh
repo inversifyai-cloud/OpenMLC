@@ -45,27 +45,30 @@ if ! command -v openssl >/dev/null 2>&1; then
   fail "openssl is required to generate secrets. install it (brew install openssl / apt install openssl) and re-run."
 fi
 
-step "docker + openssl found"
+if ! command -v gh >/dev/null 2>&1; then
+  fail "the GitHub CLI (gh) is required. install it from https://cli.github.com and re-run."
+fi
 
-# ─── Prompt for GHCR auth ─────────────────────────────────────────────────────
+step "docker + openssl + gh found"
+
+# ─── GHCR auth via gh ─────────────────────────────────────────────────────────
 echo
-printf "${DIM}OpenMLC's container image lives in GitHub's private registry (ghcr.io).${NC}\n"
-printf "${DIM}You'll need a GitHub Personal Access Token with the 'read:packages' scope.${NC}\n"
-printf "${DIM}Make one here: https://github.com/settings/tokens/new (select 'read:packages')${NC}\n"
+printf "${DIM}OpenMLC's container image lives in GitHub's registry (ghcr.io).${NC}\n"
+printf "${DIM}We'll use the GitHub CLI to authenticate — no manual token needed.${NC}\n"
 echo
 
-ask "GitHub username:"
-read -r GH_USER
-[ -n "$GH_USER" ] || fail "GitHub username is required."
+if ! gh auth status >/dev/null 2>&1; then
+  step "logging into GitHub…"
+  gh auth login --git-protocol https --web \
+    || fail "gh auth login failed. re-run and follow the prompts."
+fi
 
-ask "GitHub Personal Access Token (input hidden):"
-read -rs GH_TOKEN
-echo
-[ -n "$GH_TOKEN" ] || fail "GitHub PAT is required."
+GH_USER=$(gh api user -q .login 2>/dev/null) \
+  || fail "could not get GitHub username. try 'gh auth status' to check your session."
 
 step "logging into ghcr.io as ${GH_USER}…"
-echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin >/dev/null 2>&1 \
-  || fail "docker login failed. double-check your username + token (token needs 'read:packages')."
+gh auth token | docker login ghcr.io -u "$GH_USER" --password-stdin >/dev/null 2>&1 \
+  || fail "docker login failed. try 'gh auth refresh -s read:packages' and re-run."
 
 # ─── Setup install dir ────────────────────────────────────────────────────────
 echo
