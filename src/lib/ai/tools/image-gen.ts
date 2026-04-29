@@ -1,10 +1,16 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
 import type { ToolDefinition } from "./types";
 
 const inputSchema = z.object({
   prompt: z.string().max(2000).describe("A detailed description of the image to generate."),
 });
+
+function mkFileId(): string {
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
 
 export const imageGenDefinition: ToolDefinition<"image_gen"> = {
   name: "image_gen",
@@ -45,11 +51,39 @@ export const imageGenDefinition: ToolDefinition<"image_gen"> = {
         const item = data.data?.[0];
         if (!item) throw new Error("No image returned from API");
 
-        const url = item.url ?? (item.b64_json ? `data:image/png;base64,${item.b64_json}` : null);
-        if (!url) throw new Error("No image URL returned from API");
+        if (item.b64_json) {
+          const buf = Buffer.from(item.b64_json, "base64");
+          const fileId = mkFileId();
+          const storedName = `${fileId}.png`;
+          const relPath = `uploads/${ctx.profileId}/${storedName}`;
+          const dir = join(process.cwd(), "uploads", ctx.profileId);
+          await mkdir(dir, { recursive: true });
+          await writeFile(join(process.cwd(), relPath), buf);
 
-        return { url, prompt, model: "gpt-image-1" };
+          const attachment = await ctx.db.attachment.create({
+            data: {
+              profileId: ctx.profileId,
+              filename: `generated-${fileId}.png`,
+              mimeType: "image/png",
+              size: buf.byteLength,
+              path: relPath,
+              extractedText: null,
+            },
+          });
+
+          return {
+            attachmentId: attachment.id,
+            url: `/api/attachments/${attachment.id}`,
+            prompt,
+            model: "gpt-image-1",
+          };
+        }
+
+        if (item.url) {
+          return { url: item.url, prompt, model: "gpt-image-1" };
+        }
+
+        throw new Error("No image data returned from API");
       },
     }),
 };
-

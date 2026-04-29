@@ -204,6 +204,39 @@ function GenericToolOutput({ output }: { output: unknown }) {
   );
 }
 
+function ImageGenOutput({ output }: { output: unknown }) {
+  const data = output as { url?: string; prompt?: string; attachmentId?: string } | null;
+  if (!data?.url) return <GenericToolOutput output={output} />;
+  return (
+    <figure style={{ margin: 0 }}>
+      <img
+        src={data.url}
+        alt={data.prompt ?? "Generated image"}
+        style={{
+          display: "block",
+          maxWidth: "100%",
+          height: "auto",
+          borderRadius: "var(--r-3)",
+          border: "1px solid var(--stroke-2)",
+        }}
+      />
+      {data.prompt ? (
+        <figcaption
+          style={{
+            marginTop: 6,
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--fg-3)",
+            lineHeight: 1.5,
+          }}
+        >
+          {data.prompt}
+        </figcaption>
+      ) : null}
+    </figure>
+  );
+}
+
 type TlStatus = "idle" | "active" | "done" | "error";
 
 function TimelineNode({
@@ -290,6 +323,8 @@ function ToolNode({ part, streaming }: { part: ToolPart; streaming?: boolean }) 
       case "code_exec":   body = <CodeExecOutput output={part.output} input={part.input} />; break;
       case "url_read":    body = <UrlReadOutput output={part.output} />; break;
       case "kb_search":   body = <KbSearchOutput output={part.output} />; break;
+      case "image_gen":   body = <ImageGenOutput output={part.output} />; break;
+      case "generate_image": body = <ImageGenOutput output={part.output} />; break;
       default:            body = <GenericToolOutput output={part.output} />; break;
     }
   } else if (isError) {
