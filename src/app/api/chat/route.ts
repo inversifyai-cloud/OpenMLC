@@ -8,6 +8,7 @@ import { findModel } from "@/lib/providers/catalog";
 import { getProviderModel } from "@/lib/providers";
 import { resolveProviderKey } from "@/lib/providers/resolve-key";
 import { composeSystemPrompt } from "@/lib/ai/system-prompts";
+import { searchMemories, formatMemoriesForPrompt, extractMemoriesFromConversation } from "@/lib/ai/memory";
 import { isImage, imageToBuffer } from "@/lib/attachments";
 import { buildToolsForRequest, toolsSystemPromptHint } from "@/lib/ai/tools";
 import type { ToolContext } from "@/lib/ai/tools/types";
@@ -74,11 +75,22 @@ export async function POST(req: Request) {
 
   const conv = await db.conversation.findUnique({
     where: { id: conversationId },
-    select: { id: true, profileId: true, systemPrompt: true },
+    select: {
+      id: true,
+      profileId: true,
+      systemPrompt: true,
+      personaId: true,
+      persona: { select: { systemPrompt: true } },
+    },
   });
   if (!conv || conv.profileId !== profileId) {
     return Response.json({ error: "conversation not found" }, { status: 404 });
   }
+
+  const profileForPrefs = await db.profile.findUnique({
+    where: { id: profileId },
+    select: { memoryUseInContext: true },
+  });
 
   const resolved = await resolveProviderKey(profileId, model.providerId);
   if (!resolved) {
@@ -198,7 +210,21 @@ export async function POST(req: Request) {
   }
   const tools = { ...builtinTools, ...(mcpBundle?.tools ?? {}) };
 
-  const systemBase = composeSystemPrompt({ conversationPrompt: conv.systemPrompt });
+  let memoryBlock: string | null = null;
+  if (profileForPrefs?.memoryUseInContext && userText) {
+    try {
+      const mems = await searchMemories(profileId, userText);
+      memoryBlock = formatMemoriesForPrompt(mems) || null;
+    } catch (err) {
+      console.error("[chat] memory retrieval failed", err);
+    }
+  }
+
+  const systemBase = composeSystemPrompt({
+    conversationPrompt: conv.systemPrompt,
+    personaPrompt: conv.persona?.systemPrompt ?? null,
+    memoryBlock,
+  });
   const ragBlock = ragContext
     ? `\n\n[knowledge base context — relevant excerpts from the user's uploaded documents:\n${ragContext}\n]\nWhen using these excerpts, cite the source filename inline.`
     : "";
@@ -320,6 +346,10 @@ export async function POST(req: Request) {
       } finally {
         if (mcpBundle) await mcpBundle.cleanup().catch(() => {});
       }
+
+      extractMemoriesFromConversation(conversationId, profileId).catch((err) =>
+        console.error("[chat] memory extraction failed", err),
+      );
     },
   });
 

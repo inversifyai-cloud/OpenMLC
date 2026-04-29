@@ -3,6 +3,7 @@ import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import { TopRail } from "@/components/chat/TopRail";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
+import { ChatShell } from "@/components/chat/ChatShell";
 import type { AvatarAccent } from "@/types/profile";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +27,7 @@ export default async function ChatLayout({ children }: { children: React.ReactNo
   if (!profile) redirect("/profiles");
 
   return (
-    <div className="chat-app">
+    <ChatShell>
       <TopRail />
       <ChatSidebar
         initialConversations={conversations.map((c) => ({
@@ -41,6 +42,6 @@ export default async function ChatLayout({ children }: { children: React.ReactNo
         }}
       />
       {children}
-    </div>
+    </ChatShell>
   );
 }

@@ -33,6 +33,7 @@ type Props = {
   initialModelId: string;
   initialTitle: string;
   initialSystemPrompt?: string;
+  initialPersonaId?: string | null;
   initialMessages: ChatMessage[];
   profile: { avatarMonogram: string; displayName: string };
 };
@@ -47,10 +48,11 @@ function dbToUiMessages(rows: ChatMessage[]): UIMessage[] {
     }));
 }
 
-export function ChatThread({ conversationId, initialModelId, initialTitle, initialSystemPrompt = "", initialMessages, profile }: Props) {
+export function ChatThread({ conversationId, initialModelId, initialTitle, initialSystemPrompt = "", initialPersonaId = null, initialMessages, profile }: Props) {
   const router = useRouter();
   const [modelId, setModelId] = useState(initialModelId);
   const [systemPrompt, setSystemPrompt] = useState(initialSystemPrompt);
+  const [personaId, setPersonaId] = useState<string | null>(initialPersonaId);
   const [input, setInput] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
@@ -404,6 +406,9 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
           onReasoningEffortChange={setReasoningEffort}
           swarmMode={swarmMode}
           onSwarmToggle={setSwarmMode}
+          conversationId={conversationId}
+          personaId={personaId}
+          onPersonaChange={setPersonaId}
         />
     </main>
   );

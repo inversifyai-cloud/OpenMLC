@@ -6,6 +6,7 @@ import { useState } from "react";
 import { getModel } from "@/lib/providers/registry";
 import { isImage } from "@/lib/mime";
 import type { ChatAttachment } from "@/types/chat";
+import { TtsButton } from "./TtsButton";
 
 type TextPart      = { type: "text"; text: string };
 type ReasoningPart = { type: "reasoning"; text: string };
@@ -505,6 +506,10 @@ export function MessageBubble({
                 </svg>
                 branch
               </button>
+            )}
+            {!isUser && !streaming && messageId && text.trim().length > 0 && (
+              // TODO: read Profile.ttsAutoPlay and pass through as autoPlay prop
+              <TtsButton messageId={messageId} text={text} />
             )}
           </div>
 

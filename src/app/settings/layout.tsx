@@ -7,6 +7,10 @@ export const dynamic = "force-dynamic";
 
 const NAV: { href: string; label: string }[] = [
   { href: "/settings/api-keys", label: "api keys" },
+  { href: "/settings/personas", label: "personas" },
+  { href: "/settings/prompts", label: "prompt library" },
+  { href: "/settings/memory", label: "memory" },
+  { href: "/settings/voice", label: "voice" },
   { href: "/settings/knowledge", label: "knowledge" },
   { href: "/settings/swarm", label: "swarm" },
   { href: "/settings/mcp", label: "mcp servers" },

@@ -13,10 +13,18 @@ export function getCurrentDateContext(): string {
 
 export function composeSystemPrompt(opts: {
   conversationPrompt?: string | null;
+  personaPrompt?: string | null;
+  memoryBlock?: string | null;
 } = {}): string {
   let out = BASE_SYSTEM_PROMPT + getCurrentDateContext();
+  if (opts.personaPrompt) {
+    out += `\n\n${opts.personaPrompt}`;
+  }
   if (opts.conversationPrompt) {
     out += `\n\n${opts.conversationPrompt}`;
+  }
+  if (opts.memoryBlock) {
+    out += `\n\n${opts.memoryBlock}`;
   }
   return out;
 }

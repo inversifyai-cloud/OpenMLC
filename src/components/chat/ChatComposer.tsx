@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ModelPicker } from "./ModelPicker";
 import { MicButton } from "./MicButton";
+import { PersonaPicker } from "./PersonaPicker";
 import { isImage } from "@/lib/mime";
 import { getModel } from "@/lib/providers/registry";
 
@@ -46,6 +47,9 @@ type Props = {
   onReasoningEffortChange: (effort: ReasoningEffort) => void;
   swarmMode?: boolean;
   onSwarmToggle?: (active: boolean) => void;
+  conversationId: string;
+  personaId: string | null;
+  onPersonaChange: (personaId: string | null) => void;
 };
 
 export function ChatComposer({
@@ -63,6 +67,9 @@ export function ChatComposer({
   onReasoningEffortChange,
   swarmMode = false,
   onSwarmToggle,
+  conversationId,
+  personaId,
+  onPersonaChange,
 }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -157,6 +164,12 @@ export function ChatComposer({
           <MicButton
             onTranscript={(t) => onInputChange((input ? input + " " : "") + t)}
             disabled={status === "streaming" || status === "submitted"}
+          />
+
+          <PersonaPicker
+            conversationId={conversationId}
+            currentPersonaId={personaId}
+            onChange={onPersonaChange}
           />
 
           {supportsReasoning && (

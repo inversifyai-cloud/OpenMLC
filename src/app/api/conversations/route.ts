@@ -27,6 +27,7 @@ export async function GET() {
 
 const createSchema = z.object({
   modelId: z.string().min(1).optional(),
+  personaId: z.string().min(1).optional(),
 });
 
 export async function POST(req: Request) {
@@ -42,8 +43,32 @@ export async function POST(req: Request) {
   const parsed = createSchema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: "invalid input" }, { status: 400 });
 
-  const modelId = parsed.data.modelId
-    ? ((await findModel(parsed.data.modelId)) ? parsed.data.modelId : getDefaultModel().id)
+  let personaId: string | null = null;
+  let personaModelId: string | null = null;
+  if (parsed.data.personaId) {
+    const persona = await db.persona.findUnique({
+      where: { id: parsed.data.personaId },
+      select: { id: true, profileId: true, defaultModel: true },
+    });
+    if (persona && persona.profileId === session.profileId) {
+      personaId = persona.id;
+      personaModelId = persona.defaultModel ?? null;
+    }
+  }
+  if (!personaId) {
+    const defaultPersona = await db.persona.findFirst({
+      where: { profileId: session.profileId, isDefault: true },
+      select: { id: true, defaultModel: true },
+    });
+    if (defaultPersona) {
+      personaId = defaultPersona.id;
+      personaModelId = defaultPersona.defaultModel ?? null;
+    }
+  }
+
+  const requestedModelId = parsed.data.modelId ?? personaModelId ?? null;
+  const modelId = requestedModelId
+    ? ((await findModel(requestedModelId)) ? requestedModelId : getDefaultModel().id)
     : getDefaultModel().id;
 
   const conversation = await db.conversation.create({
@@ -51,8 +76,9 @@ export async function POST(req: Request) {
       profileId: session.profileId,
       modelId,
       title: "new conversation",
+      personaId,
     },
-    select: { id: true, title: true, modelId: true, pinned: true, archived: true, folderId: true, updatedAt: true },
+    select: { id: true, title: true, modelId: true, pinned: true, archived: true, folderId: true, updatedAt: true, personaId: true },
   });
   return NextResponse.json({ conversation });
 }

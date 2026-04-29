@@ -22,22 +22,32 @@ model Profile {
   hashedPassword  String
   avatarMonogram  String   @default("·")
   avatarAccent    String   @default("cyan")
+
+  ttsVoice              String  @default("nova")
+  ttsAutoPlay           Boolean @default(false)
+  ttsSpeed              Float   @default(1.0)
+  memoryAutoExtract     Boolean @default(true)
+  memoryUseInContext    Boolean @default(true)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  conversations  Conversation[]
-  knowledgeFiles KnowledgeFile[]
-  apiKeys        ProfileApiKey[]
-  attachments    Attachment[]
-  swarmConfig    SwarmConfig?
-  swarmRuns      SwarmRun[]
-  sessions       ProfileSession[]
-  mcpServers     McpServer[]
-  folders        Folder[]
-  budgetCaps     BudgetCap[]
-  schedules      Schedule[]
-  webhooks       Webhook[]
-  workflowRuns   WorkflowRun[]
+  conversations   Conversation[]
+  knowledgeFiles  KnowledgeFile[]
+  apiKeys         ProfileApiKey[]
+  attachments     Attachment[]
+  swarmConfig     SwarmConfig?
+  swarmRuns       SwarmRun[]
+  sessions        ProfileSession[]
+  mcpServers      McpServer[]
+  folders         Folder[]
+  budgetCaps      BudgetCap[]
+  schedules       Schedule[]
+  webhooks        Webhook[]
+  workflowRuns    WorkflowRun[]
+  memories        Memory[]
+  personas        Persona[]
+  promptTemplates PromptTemplate[]
 }
 
 model ProfileSession {
@@ -69,6 +79,7 @@ model Conversation {
   title                 String   @default("new conversation")
   modelId               String   @default("gpt-4o-mini")
   systemPrompt          String?
+  personaId             String?
   pinned                Boolean  @default(false)
   archived              Boolean  @default(false)
   branchedFromId        String?
@@ -80,6 +91,7 @@ model Conversation {
 
   profile   Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
   folder    Folder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  persona   Persona?   @relation(fields: [personaId], references: [id], onDelete: SetNull)
   messages  Message[]
   swarmRuns SwarmRun[]
   shares    ConversationShare[]
@@ -87,6 +99,7 @@ model Conversation {
 
   @@index([profileId, updatedAt])
   @@index([folderId])
+  @@index([personaId])
 }
 
 model Message {
@@ -361,4 +374,57 @@ model WorkflowRun {
   @@index([profileId, startedAt])
   @@index([scheduleId])
   @@index([webhookId])
+}
+
+model Memory {
+  id           String   @id @default(cuid())
+  profileId    String
+  text         String
+  source       String   @default("auto")
+  sourceConvId String?
+  embedding    String?
+  active       Boolean  @default(true)
+  pinned       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([profileId, active])
+}
+
+model Persona {
+  id           String   @id @default(cuid())
+  profileId    String
+  name         String
+  emoji        String?
+  systemPrompt String
+  description  String?
+  defaultModel String?
+  toolsEnabled String?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile       Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@index([profileId])
+}
+
+model PromptTemplate {
+  id        String   @id @default(cuid())
+  profileId String
+  name      String
+  body      String
+  emoji     String?
+  shortcut  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([profileId, shortcut])
 }

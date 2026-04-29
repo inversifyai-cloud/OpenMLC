@@ -50,6 +50,7 @@ const patchSchema = z.object({
   pinned: z.boolean().optional(),
   archived: z.boolean().optional(),
   folderId: z.string().nullable().optional(),
+  personaId: z.string().min(1).nullable().optional(),
 });
 
 export async function PATCH(req: Request, ctx: RouteCtx) {
@@ -71,10 +72,20 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
     return NextResponse.json({ error: "unknown model" }, { status: 400 });
   }
 
+  if (data.personaId) {
+    const persona = await db.persona.findUnique({
+      where: { id: data.personaId },
+      select: { id: true, profileId: true },
+    });
+    if (!persona || persona.profileId !== auth.profileId) {
+      return NextResponse.json({ error: "unknown persona" }, { status: 400 });
+    }
+  }
+
   const conversation = await db.conversation.update({
     where: { id: conversationId },
     data,
-    select: { id: true, title: true, modelId: true, pinned: true, archived: true, folderId: true, updatedAt: true },
+    select: { id: true, title: true, modelId: true, pinned: true, archived: true, folderId: true, personaId: true, updatedAt: true },
   });
   return NextResponse.json({ conversation });
 }

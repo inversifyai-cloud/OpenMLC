@@ -48,6 +48,7 @@ export default async function ChatConversationPage({
       initialModelId={conversation.modelId}
       initialTitle={conversation.title}
       initialSystemPrompt={conversation.systemPrompt ?? ""}
+      initialPersonaId={conversation.personaId ?? null}
       initialMessages={conversation.messages.map((m) => ({
         id: m.id,
         role: m.role as "user" | "assistant",

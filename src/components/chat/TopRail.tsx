@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/chrome/ThemeToggle";
+import { HamburgerButton } from "@/components/chat/ChatShell";
 
 export function TopRail() {
   const pathname = usePathname();
@@ -10,6 +11,7 @@ export function TopRail() {
   return (
     <header className="topbar">
       <div className="topbar-left">
+        <HamburgerButton />
         <div className="brand">
           <span className="brand-name">openmlc</span>
         </div>
