@@ -64,14 +64,13 @@ ENV DATABASE_URL="file:/data/openmlc.db"
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static     ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public           ./public
-# Prisma engines + schema (standalone doesn't pick these up automatically)
-COPY --from=build --chown=nextjs:nodejs /app/prisma           ./prisma
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/.prisma          ./node_modules/.prisma
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/@prisma/client   ./node_modules/@prisma/client
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/@prisma/engines  ./node_modules/@prisma/engines
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/prisma           ./node_modules/prisma
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/@prisma/adapter-better-sqlite3 ./node_modules/@prisma/adapter-better-sqlite3
-COPY --from=build --chown=nextjs:nodejs /app/node_modules/better-sqlite3   ./node_modules/better-sqlite3
+# Prisma engines + schema (standalone doesn't pick these up automatically).
+# Copy the whole @prisma/ namespace so transitive deps like @prisma/debug are included.
+COPY --from=build --chown=nextjs:nodejs /app/prisma                       ./prisma
+COPY --from=build --chown=nextjs:nodejs /app/node_modules/.prisma         ./node_modules/.prisma
+COPY --from=build --chown=nextjs:nodejs /app/node_modules/@prisma         ./node_modules/@prisma
+COPY --from=build --chown=nextjs:nodejs /app/node_modules/prisma          ./node_modules/prisma
+COPY --from=build --chown=nextjs:nodejs /app/node_modules/better-sqlite3  ./node_modules/better-sqlite3
 
 # Persisted volume for SQLite + uploads
 RUN mkdir -p /data /app/uploads && chown -R nextjs:nodejs /data /app/uploads
