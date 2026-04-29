@@ -12,10 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 build-essential ca-certificates openssl \
  && rm -rf /var/lib/apt/lists/*
 
-# Skip postinstall (prisma generate) — we'll run it explicitly in the build stage
-# once the schema is on disk.
+# Copy schema first so the postinstall (prisma generate) succeeds and
+# better-sqlite3 native binary is also built (--ignore-scripts would skip both).
 COPY package.json package-lock.json* ./
-RUN npm ci --no-audit --no-fund --ignore-scripts
+COPY prisma ./prisma
+RUN npm ci --no-audit --no-fund
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 2 — build: compile Next.js standalone bundle + generate Prisma client
