@@ -1,13 +1,13 @@
 
 
 export interface ExtractedArtifact {
-  type: "html" | "svg" | "code" | "markdown";
+  type: "html" | "svg" | "code" | "markdown" | "react";
   language?: string;
   title: string;
   content: string;
 }
 
-const VALID_TYPES = new Set(["html", "svg", "code", "markdown"]);
+const VALID_TYPES = new Set(["html", "svg", "code", "markdown", "react"]);
 
 function parseType(raw: string): ExtractedArtifact["type"] {
   const t = raw.toLowerCase().trim();
@@ -47,7 +47,10 @@ export function extractArtifacts(messageText: string): ExtractedArtifact[] {
     const content = fenceMatch[2];
     const lineCount = content.split("\n").length;
 
-    if (lineCount < 30) continue;
+    const isPreviewable =
+      lang === "html" || lang === "svg";
+    if (!isPreviewable && lineCount < 30) continue;
+    if (isPreviewable && lineCount < 5) continue;
 
     const isInsideTag = results.some((_, idx) => {
 

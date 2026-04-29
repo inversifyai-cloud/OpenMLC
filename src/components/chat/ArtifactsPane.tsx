@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 
 export interface ArtifactData {
   id: string;
-  type: "html" | "svg" | "code" | "markdown";
+  type: "html" | "svg" | "code" | "markdown" | "react";
   language?: string | null;
   title: string;
   content: string;
@@ -12,6 +12,30 @@ export interface ArtifactData {
   createdAt: string | Date;
   messageId: string;
   conversationId: string;
+}
+
+function wrapReactComponent(code: string, title: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${title.replace(/[<>"']/g, "")}</title>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js"></script>
+<style>html,body,#root{height:100%;margin:0;font-family:system-ui,-apple-system,sans-serif;}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="env,react">
+${code}
+const __mountRoot = document.getElementById("root");
+ReactDOM.createRoot(__mountRoot).render(React.createElement(App));
+</script>
+</body>
+</html>`;
 }
 
 interface ArtifactsPaneProps {
@@ -56,6 +80,7 @@ function extForType(type: ArtifactData["type"], language?: string | null): strin
   if (type === "html") return ".html";
   if (type === "svg") return ".svg";
   if (type === "markdown") return ".md";
+  if (type === "react") return ".jsx";
   return `.${language ?? "txt"}`;
 }
 
@@ -128,8 +153,15 @@ export function ArtifactsPane({ artifact, onClose, versions = [] }: ArtifactsPan
           <>
             {artifact.type === "html" && (
               <iframe
-                sandbox="allow-scripts"
+                sandbox="allow-scripts allow-popups allow-modals allow-forms"
                 srcDoc={artifact.content}
+                title={artifact.title}
+              />
+            )}
+            {artifact.type === "react" && (
+              <iframe
+                sandbox="allow-scripts allow-popups allow-modals allow-forms"
+                srcDoc={wrapReactComponent(artifact.content, artifact.title)}
                 title={artifact.title}
               />
             )}

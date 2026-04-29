@@ -4,7 +4,7 @@ interface ArtifactInlineProps {
   artifact: {
     id: string;
     title: string;
-    type: "html" | "svg" | "code" | "markdown";
+    type: "html" | "svg" | "code" | "markdown" | "react";
     language?: string | null;
   };
   onOpen: (artifactId: string) => void;
@@ -13,6 +13,7 @@ interface ArtifactInlineProps {
 export function ArtifactInline({ artifact, onOpen }: ArtifactInlineProps) {
   const icon =
     artifact.type === "html" ? "🌐"
+    : artifact.type === "react" ? "⚛"
     : artifact.type === "svg" ? "🖼"
     : artifact.type === "markdown" ? "📝"
     : "📄";
