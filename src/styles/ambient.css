@@ -1,0 +1,37 @@
+/* OpenMLC — ambient gradient layer.
+   A static cyan/mint radial wash behind glass surfaces.
+   Apply .bg-orbit on a parent to enable a 60s linear orbit (marketing only). */
+
+.ambient-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: var(--ambient);
+}
+
+@keyframes ambient-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.bg-orbit .ambient-layer {
+  animation: ambient-orbit 60s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-orbit .ambient-layer { animation: none; }
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+.live-pulse {
+  animation: live-pulse var(--dur-5) ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-pulse { animation: none; }
+}

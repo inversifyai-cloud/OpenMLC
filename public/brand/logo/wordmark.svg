@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" width="240" height="48" fill="none">
+  
+  <path d="M 6 8 L 2 8 L 2 40 L 6 40" stroke="currentColor" stroke-width="1" stroke-linecap="square" fill="none" opacity="0.4"></path>
+  <path d="M 234 8 L 238 8 L 238 40 L 234 40" stroke="currentColor" stroke-width="1" stroke-linecap="square" fill="none" opacity="0.4"></path>
+
+  
+  <g stroke="currentColor" stroke-width="1" opacity="0.35">
+    <line x1="14" y1="6" x2="14" y2="10"></line>
+    <line x1="38" y1="8" x2="38" y2="10"></line>
+    <line x1="62" y1="8" x2="62" y2="10"></line>
+    <line x1="86" y1="6" x2="86" y2="10"></line>
+    <line x1="110" y1="8" x2="110" y2="10"></line>
+    <line x1="134" y1="8" x2="134" y2="10"></line>
+    <line x1="158" y1="6" x2="158" y2="10"></line>
+    <line x1="182" y1="8" x2="182" y2="10"></line>
+    <line x1="206" y1="8" x2="206" y2="10"></line>
+    <line x1="226" y1="6" x2="226" y2="10"></line>
+  </g>
+
+  
+  <g font-family="&#39;Space Grotesk&#39;, sans-serif" font-weight="300" font-size="22" letter-spacing="0.04em" fill="currentColor">
+    <text x="14" y="32">openmlc</text>
+  </g>
+
+  
+  <circle cx="118" cy="26" r="2.4" fill="#1e83ee">
+    
+  </circle>
+  <circle cx="118" cy="26" r="5" fill="none" stroke="#1e83ee" stroke-width="1" opacity="0.4">
+    
+    
+  </circle>
+
+  
+  <g stroke="currentColor" stroke-width="1" opacity="0.35">
+    <line x1="14" y1="38" x2="14" y2="42"></line>
+    <line x1="86" y1="38" x2="86" y2="42"></line>
+    <line x1="158" y1="38" x2="158" y2="42"></line>
+    <line x1="226" y1="38" x2="226" y2="42"></line>
+  </g>
+</svg>

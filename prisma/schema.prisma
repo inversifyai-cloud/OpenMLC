@@ -1,0 +1,364 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Settings {
+  id                    String   @id @default("singleton")
+  profileCreationLocked Boolean  @default(false)
+  swarmEnabled          Boolean  @default(true)
+  codeSandboxEnabled    Boolean  @default(false)
+  updatedAt             DateTime @updatedAt
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  displayName     String
+  hashedPassword  String
+  avatarMonogram  String   @default("·")
+  avatarAccent    String   @default("cyan")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  conversations  Conversation[]
+  knowledgeFiles KnowledgeFile[]
+  apiKeys        ProfileApiKey[]
+  attachments    Attachment[]
+  swarmConfig    SwarmConfig?
+  swarmRuns      SwarmRun[]
+  sessions       ProfileSession[]
+  mcpServers     McpServer[]
+  folders        Folder[]
+  budgetCaps     BudgetCap[]
+  schedules      Schedule[]
+  webhooks       Webhook[]
+  workflowRuns   WorkflowRun[]
+}
+
+model ProfileSession {
+  id        String   @id @default(cuid())
+  profileId String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model ProfileApiKey {
+  id           String   @id @default(cuid())
+  profileId    String
+  provider     String
+  encryptedKey String
+  baseUrl      String?
+  createdAt    DateTime @default(now())
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, provider])
+}
+
+model Conversation {
+  id                    String   @id @default(cuid())
+  profileId             String
+  title                 String   @default("new conversation")
+  modelId               String   @default("gpt-4o-mini")
+  systemPrompt          String?
+  pinned                Boolean  @default(false)
+  archived              Boolean  @default(false)
+  branchedFromId        String?
+  branchedFromMessageId String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  folderId              String?
+
+  profile   Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  folder    Folder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  messages  Message[]
+  swarmRuns SwarmRun[]
+  shares    ConversationShare[]
+  artifacts Artifact[]
+
+  @@index([profileId, updatedAt])
+  @@index([folderId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  modelId        String?
+  parentId       String?
+  inputTokens    Int?
+  outputTokens   Int?
+  costUsd        Float?
+  reasoning      String?
+  toolCalls      String?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  attachments  Attachment[]
+  artifacts    Artifact[]
+
+  @@index([conversationId, createdAt])
+}
+
+model Attachment {
+  id            String   @id @default(cuid())
+  profileId     String
+  messageId     String?
+  filename      String
+  mimeType      String
+  size          Int
+  path          String
+  extractedText String?
+  createdAt     DateTime @default(now())
+
+  profile Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  message Message? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([profileId])
+  @@index([messageId])
+}
+
+model KnowledgeFile {
+  id              String   @id @default(cuid())
+  profileId       String
+  filename        String
+  mimeType        String
+  size            Int
+  path            String
+  content         String?
+  active          Boolean  @default(true)
+  embeddingStatus String   @default("pending")
+  createdAt       DateTime @default(now())
+
+  profile Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  chunks  KnowledgeChunk[]
+
+  @@index([profileId])
+}
+
+model KnowledgeChunk {
+  id              String  @id @default(cuid())
+  knowledgeFileId String
+  chunkIndex      Int
+  content         String
+  embedding       String?
+  tokenCount      Int     @default(0)
+  metadata        String?
+
+  knowledgeFile KnowledgeFile @relation(fields: [knowledgeFileId], references: [id], onDelete: Cascade)
+
+  @@index([knowledgeFileId])
+}
+
+model SwarmConfig {
+  id               String   @id @default(cuid())
+  profileId        String   @unique
+  enabledProviders String   @default("[]")
+  minAgents        Int      @default(2)
+  maxAgents        Int      @default(5)
+  reasoningEffort  String   @default("medium")
+  supervisorModel  String   @default("claude-sonnet-4-5")
+  updatedAt        DateTime @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model SwarmRun {
+  id             String    @id @default(cuid())
+  profileId      String
+  conversationId String?
+  prompt         String
+  status         String    @default("planning")
+  plan           String?
+  finalOutput    String?
+  error          String?
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+
+  profile      Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  agents       SwarmAgent[]
+
+  @@index([profileId, startedAt])
+}
+
+model McpServer {
+  id        String   @id @default(cuid())
+  profileId String
+  name      String
+  command   String
+  args      String   @default("[]")
+  env       String   @default("{}")
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model SwarmAgent {
+  id           String    @id @default(cuid())
+  swarmRunId   String
+  role         String
+  modelId      String
+  providerId   String
+  task         String
+  status       String    @default("queued")
+  output       String?
+  reasoning    String?
+  inputTokens  Int?
+  outputTokens Int?
+  costUsd      Float?
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  swarmRun SwarmRun @relation(fields: [swarmRunId], references: [id], onDelete: Cascade)
+
+  @@index([swarmRunId])
+}
+
+// ── M8.1 — Conversation UX ──────────────────────────────────────────
+model Folder {
+  id        String   @id @default(cuid())
+  profileId String
+  name      String
+  color     String   @default("#16A34A")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  profile       Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@index([profileId, sortOrder])
+}
+
+model ConversationShare {
+  id             String    @id @default(cuid())
+  conversationId String
+  slug           String    @unique
+  expiresAt      DateTime?
+  viewCount      Int       @default(0)
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+// ── M8.2 — Cost & Usage ─────────────────────────────────────────────
+model BudgetCap {
+  id          String   @id @default(cuid())
+  profileId   String
+  providerId  String
+  capUsd      Float
+  periodDays  Int      @default(30)
+  createdAt   DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, providerId])
+}
+
+model UsageDaily {
+  id           String   @id @default(cuid())
+  profileId    String
+  providerId   String
+  modelId      String
+  day          String   // YYYY-MM-DD
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  costUsd      Float    @default(0)
+  requestCount Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([profileId, providerId, modelId, day])
+  @@index([profileId, day])
+}
+
+// ── M8.4b — Artifacts ───────────────────────────────────────────────
+model Artifact {
+  id             String   @id @default(cuid())
+  conversationId String
+  messageId      String
+  type           String   // "code" | "html" | "svg" | "markdown"
+  language       String?
+  title          String   @default("artifact")
+  content        String
+  version        Int      @default(1)
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message      Message      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([messageId])
+}
+
+// ── M8.5 — Workflows ────────────────────────────────────────────────
+model Schedule {
+  id            String    @id @default(cuid())
+  profileId     String
+  name          String
+  cron          String
+  kind          String    // "chat" | "swarm"
+  payload       String    @default("{}")
+  enabled       Boolean   @default(true)
+  lastRunAt     DateTime?
+  lastRunStatus String?
+  nextRunAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  runs    WorkflowRun[]
+
+  @@index([profileId])
+  @@index([enabled, nextRunAt])
+}
+
+model Webhook {
+  id             String   @id @default(cuid())
+  profileId      String
+  slug           String   @unique
+  kind           String   // "chat" | "swarm"
+  presetPayload  String   @default("{}")
+  secret         String
+  createdAt      DateTime @default(now())
+
+  profile Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  runs    WorkflowRun[]
+
+  @@index([profileId])
+}
+
+model WorkflowRun {
+  id          String    @id @default(cuid())
+  profileId   String
+  scheduleId  String?
+  webhookId   String?
+  status      String    @default("running") // running | completed | failed
+  output      String?
+  error       String?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  profile  Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  schedule Schedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  webhook  Webhook?  @relation(fields: [webhookId], references: [id], onDelete: SetNull)
+
+  @@index([profileId, startedAt])
+  @@index([scheduleId])
+  @@index([webhookId])
+}

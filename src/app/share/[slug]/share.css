@@ -1,0 +1,159 @@
+/* Share page — public read-only thread */
+.share-shell {
+  min-height: 100vh;
+  background: var(--bg-app);
+  display: flex;
+  flex-direction: column;
+}
+
+.share-header {
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--stroke-1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-canvas);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.share-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.share-brand-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--fg-accent);
+  border-radius: 1px;
+}
+.share-brand-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-1);
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
+
+.share-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.share-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--fg-3);
+  padding: 2px 7px;
+  border: 1px solid var(--stroke-1);
+  border-radius: 2px;
+  background: var(--surface-2);
+}
+
+.share-main {
+  flex: 1;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+}
+
+.share-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--fg-1);
+  letter-spacing: -0.02em;
+  margin: 0 0 32px;
+}
+
+.share-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.share-msg {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.share-msg-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  user-select: none;
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-1);
+  color: var(--fg-3);
+}
+.share-msg--assistant .share-msg-avatar {
+  background: var(--fg-accent);
+  color: #fafaf7;
+  border-color: var(--fg-accent);
+}
+.share-msg--user .share-msg-avatar {
+  background: var(--ink-900, #1a1a1a);
+  color: var(--ink-50, #fafaf7);
+  border-color: transparent;
+}
+
+.share-msg-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.share-msg-model {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-accent);
+  letter-spacing: 0.04em;
+}
+
+.share-msg-text {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--fg-1);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.share-msg-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-4);
+  letter-spacing: 0.04em;
+}
+
+.share-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--stroke-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-4);
+  letter-spacing: 0.06em;
+}
+.share-footer-link {
+  color: var(--fg-accent);
+  text-decoration: none;
+}
+.share-footer-link:hover { text-decoration: underline; }

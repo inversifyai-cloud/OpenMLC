@@ -1,0 +1,38 @@
+# OpenMLC — single-container deploy.
+#
+# Usage:
+#   1. cp .env.docker.example .env
+#   2. Fill in SESSION_SECRET and ENCRYPTION_KEY (generate with `openssl rand -hex 32`)
+#   3. docker login ghcr.io -u <github-username>      # only for private images
+#   4. docker compose up -d
+#   5. open http://localhost:3000
+#
+# Updates:
+#   docker compose pull && docker compose up -d
+#
+# WARNING: `docker compose down -v` wipes your conversations + uploaded files.
+
+services:
+  openmlc:
+    image: ghcr.io/inversifyai-cloud/openmlc:latest
+    container_name: openmlc
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "file:/data/openmlc.db"
+    volumes:
+      - openmlc-data:/data
+      - openmlc-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/models >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  openmlc-data:
+  openmlc-uploads:

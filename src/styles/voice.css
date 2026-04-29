@@ -1,0 +1,119 @@
+/* ── Voice UI: waveform bars + button states ─────────────────────────── */
+
+@keyframes voice-bar-pulse {
+  0%, 100% { transform: scaleY(0.2); opacity: 0.4; }
+  50%       { transform: scaleY(1);   opacity: 1;   }
+}
+
+.voice-waveform {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 20px;
+}
+
+.voice-waveform-bar {
+  width: 2px;
+  height: 100%;
+  background: var(--fg-accent, #4ade80);
+  border-radius: 1px;
+  transform-origin: center bottom;
+  animation: voice-bar-pulse 800ms ease-in-out infinite;
+}
+
+/* stagger each bar */
+.voice-waveform-bar:nth-child(1)  { animation-delay:   0ms; }
+.voice-waveform-bar:nth-child(2)  { animation-delay:  25ms; }
+.voice-waveform-bar:nth-child(3)  { animation-delay:  50ms; }
+.voice-waveform-bar:nth-child(4)  { animation-delay:  75ms; }
+.voice-waveform-bar:nth-child(5)  { animation-delay: 100ms; }
+.voice-waveform-bar:nth-child(6)  { animation-delay: 125ms; }
+.voice-waveform-bar:nth-child(7)  { animation-delay: 150ms; }
+.voice-waveform-bar:nth-child(8)  { animation-delay: 175ms; }
+.voice-waveform-bar:nth-child(9)  { animation-delay: 200ms; }
+.voice-waveform-bar:nth-child(10) { animation-delay: 225ms; }
+.voice-waveform-bar:nth-child(11) { animation-delay: 200ms; }
+.voice-waveform-bar:nth-child(12) { animation-delay: 175ms; }
+.voice-waveform-bar:nth-child(13) { animation-delay: 150ms; }
+.voice-waveform-bar:nth-child(14) { animation-delay: 125ms; }
+.voice-waveform-bar:nth-child(15) { animation-delay: 100ms; }
+.voice-waveform-bar:nth-child(16) { animation-delay:  75ms; }
+.voice-waveform-bar:nth-child(17) { animation-delay:  50ms; }
+.voice-waveform-bar:nth-child(18) { animation-delay:  25ms; }
+.voice-waveform-bar:nth-child(19) { animation-delay:   0ms; }
+.voice-waveform-bar:nth-child(20) { animation-delay:  25ms; }
+.voice-waveform-bar:nth-child(21) { animation-delay:  50ms; }
+.voice-waveform-bar:nth-child(22) { animation-delay:  75ms; }
+.voice-waveform-bar:nth-child(23) { animation-delay: 100ms; }
+.voice-waveform-bar:nth-child(24) { animation-delay: 125ms; }
+.voice-waveform-bar:nth-child(25) { animation-delay: 150ms; }
+.voice-waveform-bar:nth-child(26) { animation-delay: 175ms; }
+.voice-waveform-bar:nth-child(27) { animation-delay: 200ms; }
+.voice-waveform-bar:nth-child(28) { animation-delay: 175ms; }
+.voice-waveform-bar:nth-child(29) { animation-delay: 150ms; }
+.voice-waveform-bar:nth-child(30) { animation-delay: 125ms; }
+.voice-waveform-bar:nth-child(31) { animation-delay: 100ms; }
+.voice-waveform-bar:nth-child(32) { animation-delay:  75ms; }
+
+/* ── Mic / Speak shared button base ──────────────────────────────────── */
+
+.voice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--r-1, 4px);
+  border: 1px solid var(--stroke-2, rgba(255,255,255,0.08));
+  background: var(--surface-1, rgba(255,255,255,0.04));
+  color: var(--fg-2, rgba(255,255,255,0.65));
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 120ms, color 120ms, border-color 120ms;
+  user-select: none;
+}
+
+.voice-btn:hover:not(:disabled) {
+  background: var(--surface-hover, rgba(255,255,255,0.08));
+  color: var(--fg-1, #fff);
+}
+
+.voice-btn:active:not(:disabled) {
+  background: var(--surface-press, rgba(255,255,255,0.12));
+}
+
+.voice-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.voice-btn--recording {
+  border-color: var(--fg-accent, #4ade80);
+  color: var(--fg-accent, #4ade80);
+  background: rgba(74, 222, 128, 0.06);
+}
+
+.voice-btn--playing {
+  border-color: var(--blue-500, #60a5fa);
+  color: var(--blue-500, #60a5fa);
+  background: rgba(96, 165, 250, 0.06);
+}
+
+/* ── REC indicator dot ───────────────────────────────────────────────── */
+
+.voice-rec-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fg-accent, #4ade80);
+  flex-shrink: 0;
+  animation: voice-rec-blink 1s step-start infinite;
+}
+
+@keyframes voice-rec-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}

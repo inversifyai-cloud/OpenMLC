@@ -5,19 +5,56 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "openmlc": "tsx scripts/openmlc.ts",
+    "build:icons": "tsx scripts/build-icons.ts",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma db push --force-reset && npm run db:seed",
+    "postinstall": "prisma generate"
+  },
+  "bin": {
+    "openmlc": "./scripts/openmlc.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/google": "^3.0.64",
+    "@ai-sdk/openai": "^3.0.53",
+    "@ai-sdk/react": "^3.0.170",
+    "@ai-sdk/xai": "^3.0.83",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@prisma/adapter-better-sqlite3": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@types/pdf-parse": "^1.1.5",
+    "ai": "^6.0.168",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.9.0",
+    "cheerio": "^1.2.0",
+    "commander": "^14.0.3",
+    "cron-parser": "^5.5.0",
+    "iron-session": "^8.0.4",
     "next": "16.2.4",
+    "next-themes": "^0.4.6",
+    "openai": "^6.35.0",
+    "pdf-parse": "^2.4.5",
+    "prisma": "^7.8.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

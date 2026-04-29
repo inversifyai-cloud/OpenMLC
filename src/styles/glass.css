@@ -1,0 +1,17 @@
+/* OpenMLC — solid surfaces (no blur). */
+
+.glass {
+  background: var(--surface-1);
+  border: 1px solid var(--stroke-1);
+  box-shadow: var(--shadow-1);
+}
+
+.glass-strong {
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-2);
+  box-shadow: var(--shadow-2);
+}
+
+.glass-flat {
+  background: var(--surface-1);
+}

@@ -1,0 +1,210 @@
+/* ── Compare Mode ─────────────────────────────────────────────────────────── */
+
+.compare-grid {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.compare-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--stroke-1);
+  overflow: hidden;
+}
+
+.compare-col:last-child {
+  border-right: none;
+}
+
+.compare-col-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--stroke-1);
+  background: var(--bg-canvas);
+  flex-shrink: 0;
+}
+
+.compare-provider-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.compare-model-label {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--fg-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compare-col-body {
+  flex: 1 1 0;
+  overflow-y: auto;
+  padding: 16px 14px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--fg-1);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.compare-col-body.streaming::after {
+  content: "▋";
+  display: inline-block;
+  animation: compare-blink 0.9s step-end infinite;
+  color: var(--fg-accent);
+  font-size: 12px;
+  margin-left: 1px;
+  vertical-align: baseline;
+}
+
+@keyframes compare-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.compare-col-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  border-top: 1px solid var(--stroke-1);
+  background: var(--bg-canvas);
+  gap: 8px;
+}
+
+.compare-usage-chip {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  color: var(--fg-4);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.compare-pick-btn {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 0;
+  border: 1px solid var(--stroke-2);
+  background: transparent;
+  color: var(--fg-accent);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+
+.compare-pick-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--fg-accent);
+}
+
+.compare-pick-btn:active {
+  background: var(--surface-press);
+}
+
+.compare-pick-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.compare-error {
+  color: var(--signal-err);
+  font-size: 13px;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* ── Compare Toggle ───────────────────────────────────────────────────────── */
+
+.compare-toggle-root {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.compare-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 0;
+  border: 1px solid var(--stroke-2);
+  background: transparent;
+  color: var(--fg-3);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+
+.compare-toggle-btn:hover {
+  background: var(--surface-hover);
+  color: var(--fg-1);
+}
+
+.compare-toggle-btn.active {
+  border-color: var(--fg-accent);
+  color: var(--fg-accent);
+  background: var(--surface-selected);
+}
+
+.compare-model-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.compare-model-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  padding: 2px 6px;
+  border: 1px solid var(--stroke-2);
+  color: var(--fg-2);
+  background: var(--surface-1);
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.compare-model-chip:hover {
+  background: var(--surface-hover);
+}
+
+.compare-model-chip-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.compare-model-chip-remove {
+  color: var(--fg-4);
+  font-size: 12px;
+  margin-left: 2px;
+  line-height: 1;
+}
+
+.compare-model-chip-remove:hover {
+  color: var(--signal-err);
+}
