@@ -83,6 +83,7 @@ set -e
 echo "[entrypoint] applying schema to ${DATABASE_URL}"
 node node_modules/prisma/build/index.js db push \
   --schema=./prisma/schema.prisma \
+  --url="${DATABASE_URL}" \
   --accept-data-loss
 echo "[entrypoint] starting next.js"
 exec node node_modules/next/dist/bin/next start -H "${HOSTNAME}" -p "${PORT}"
