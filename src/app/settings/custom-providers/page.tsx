@@ -22,14 +22,14 @@ type Draft = {
   name: string;
   baseUrl: string;
   apiKey: string;
-  modelsRaw: string;
+  models: ModelEntry[];
 };
 
 const EMPTY: Draft = {
   name: "",
   baseUrl: "",
   apiKey: "",
-  modelsRaw: "",
+  models: [],
 };
 
 const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
@@ -54,42 +54,105 @@ const INPUT: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
-function parseModelsLines(raw: string): ModelEntry[] {
-  return raw
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [slug, ...rest] = line.split(/\s*[|│]\s*/);
-      const labelPart = rest.join(" | ").trim();
-      const ctxMatch = /(\d+)k\s*ctx/i.exec(labelPart);
-      const visionFlag = /\bvision\b/i.test(labelPart);
-      const cleanName = labelPart
-        .replace(/\d+k\s*ctx/gi, "")
-        .replace(/\bvision\b/gi, "")
-        .replace(/\s{2,}/g, " ")
-        .trim();
-      return {
-        providerModelId: slug,
-        name: cleanName || undefined,
-        contextWindow: ctxMatch ? Number(ctxMatch[1]) * 1000 : undefined,
-        vision: visionFlag || undefined,
-      };
-    });
-}
-
-function formatModelsLines(models: ModelEntry[]): string {
-  return models
-    .map((m) => {
-      const parts: string[] = [m.providerModelId];
-      const meta: string[] = [];
-      if (m.name) meta.push(m.name);
-      if (m.contextWindow) meta.push(`${Math.round(m.contextWindow / 1000)}k ctx`);
-      if (m.vision) meta.push("vision");
-      if (meta.length) parts.push(meta.join(" "));
-      return parts.join(" | ");
-    })
-    .join("\n");
+function ModelRow({
+  model,
+  onChange,
+  onRemove,
+}: {
+  model: ModelEntry;
+  onChange: (m: ModelEntry) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div
+      style={{
+        background: "var(--bg-canvas)",
+        border: "1px solid var(--stroke-1)",
+        borderRadius: "var(--r-2)",
+        padding: 10,
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr 110px 80px 32px",
+        gap: 8,
+        alignItems: "end",
+      }}
+    >
+      <div>
+        <span style={LABEL}>model slug</span>
+        <input
+          type="text"
+          value={model.providerModelId}
+          onChange={(e) => onChange({ ...model, providerModelId: e.target.value })}
+          placeholder="meta-llama/Llama-3.3-70B-Instruct-Turbo"
+          style={{ ...INPUT, fontFamily: "var(--font-mono)", fontSize: 12 }}
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </div>
+      <div>
+        <span style={LABEL}>display name</span>
+        <input
+          type="text"
+          value={model.name ?? ""}
+          onChange={(e) => onChange({ ...model, name: e.target.value || undefined })}
+          placeholder="Llama 3.3 70B"
+          style={INPUT}
+        />
+      </div>
+      <div>
+        <span style={LABEL}>context</span>
+        <input
+          type="number"
+          min={1024}
+          step={1024}
+          value={model.contextWindow ?? ""}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            onChange({ ...model, contextWindow: isFinite(n) && n > 0 ? n : undefined });
+          }}
+          placeholder="128000"
+          style={{ ...INPUT, fontFamily: "var(--font-mono)" }}
+        />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+        <span style={LABEL}>vision</span>
+        <label
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            paddingTop: 8,
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={!!model.vision}
+            onChange={(e) => onChange({ ...model, vision: e.target.checked || undefined })}
+          />
+          <span style={{ ...MONO, fontSize: 11, color: "var(--fg-3)" }}>image input</span>
+        </label>
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        title="remove model"
+        style={{
+          width: 32,
+          height: 32,
+          padding: 0,
+          background: "transparent",
+          color: "var(--signal-err)",
+          border: "1px solid var(--stroke-1)",
+          borderRadius: "var(--r-1)",
+          cursor: "pointer",
+          fontSize: 16,
+          marginBottom: 2,
+        }}
+      >
+        ×
+      </button>
+    </div>
+  );
 }
 
 export default function CustomProvidersPage() {
@@ -115,7 +178,7 @@ export default function CustomProvidersPage() {
 
   function startNew() {
     setEditingId("__new__");
-    setDraft(EMPTY);
+    setDraft({ ...EMPTY, models: [{ providerModelId: "" }] });
     setErr(null);
   }
 
@@ -123,23 +186,48 @@ export default function CustomProvidersPage() {
     setEditingId(p.id);
     let models: ModelEntry[] = [];
     try { models = JSON.parse(p.models) as ModelEntry[]; } catch {}
+    if (models.length === 0) models = [{ providerModelId: "" }];
     setDraft({
       name: p.name,
       baseUrl: p.baseUrl,
       apiKey: "",
-      modelsRaw: formatModelsLines(models),
+      models,
     });
     setErr(null);
   }
 
+  function setModel(idx: number, m: ModelEntry) {
+    setDraft((prev) => ({
+      ...prev,
+      models: prev.models.map((x, i) => (i === idx ? m : x)),
+    }));
+  }
+
+  function addModel() {
+    setDraft((prev) => ({ ...prev, models: [...prev.models, { providerModelId: "" }] }));
+  }
+
+  function removeModel(idx: number) {
+    setDraft((prev) => ({
+      ...prev,
+      models: prev.models.filter((_, i) => i !== idx),
+    }));
+  }
+
   async function save() {
-    if (!draft.name.trim() || !draft.baseUrl.trim() || !draft.modelsRaw.trim()) {
-      setErr("Name, base URL, and at least one model are required.");
+    if (!draft.name.trim() || !draft.baseUrl.trim()) {
+      setErr("Name and base URL are required.");
       return;
     }
-    const models = parseModelsLines(draft.modelsRaw);
-    if (models.length === 0) {
-      setErr("At least one model slug is required.");
+    const cleanedModels = draft.models
+      .map((m) => ({
+        ...m,
+        providerModelId: m.providerModelId.trim(),
+        name: m.name?.trim() || undefined,
+      }))
+      .filter((m) => m.providerModelId.length > 0);
+    if (cleanedModels.length === 0) {
+      setErr("Add at least one model.");
       return;
     }
     setSaving(true);
@@ -149,7 +237,7 @@ export default function CustomProvidersPage() {
       const body: Record<string, unknown> = {
         name: draft.name.trim(),
         baseUrl: draft.baseUrl.trim(),
-        models,
+        models: cleanedModels,
       };
       if (draft.apiKey) body.apiKey = draft.apiKey;
       const res = await fetch(isNew ? "/api/custom-providers" : `/api/custom-providers/${editingId}`, {
@@ -172,7 +260,7 @@ export default function CustomProvidersPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this provider? Any conversations using its models will need a different model selected.")) return;
+    if (!confirm("Delete this provider? Conversations using its models will need a different model selected.")) return;
     await fetch(`/api/custom-providers/${id}`, { method: "DELETE" });
     await load();
   }
@@ -187,7 +275,7 @@ export default function CustomProvidersPage() {
   }
 
   return (
-    <div style={{ maxWidth: 760 }}>
+    <div style={{ maxWidth: 920 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <h1 style={{ fontSize: 20, fontWeight: 600 }}>Custom providers</h1>
         {!editingId && (
@@ -213,7 +301,7 @@ export default function CustomProvidersPage() {
         )}
       </div>
       <p style={{ color: "var(--fg-3)", marginBottom: 24, fontSize: 13, lineHeight: 1.6 }}>
-        Hook up any OpenAI-compatible endpoint - Together, Groq, Anyscale, vLLM, LM Studio, LiteLLM, Mistral, Cerebras, your own deployment. Specify the model slugs the provider exposes; OpenMLC does not auto-discover.
+        Connect any OpenAI-compatible endpoint - Together, Groq, Anyscale, vLLM, LM Studio, LiteLLM, your own deployment. List the model slugs the provider exposes.
       </p>
 
       {editingId && (
@@ -248,7 +336,7 @@ export default function CustomProvidersPage() {
               />
             </div>
           </div>
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: 16 }}>
             <span style={LABEL}>api key (leave blank for public endpoints)</span>
             <input
               type="password"
@@ -259,22 +347,56 @@ export default function CustomProvidersPage() {
               style={{ ...INPUT, fontFamily: "var(--font-mono)" }}
             />
           </div>
+
           <div style={{ marginBottom: 12 }}>
-            <span style={LABEL}>models (one per line - slug | display name 128k ctx vision)</span>
-            <textarea
-              value={draft.modelsRaw}
-              onChange={(e) => setDraft({ ...draft, modelsRaw: e.target.value })}
-              placeholder={`meta-llama/Llama-3.3-70B-Instruct-Turbo | Llama 3.3 70B 128k ctx
-meta-llama/Llama-Vision-Free | Llama 3.2 11B Vision 128k ctx vision
-mistralai/Mixtral-8x22B-Instruct-v0.1 | Mixtral 8x22B 64k ctx`}
-              rows={7}
-              style={{ ...INPUT, fontFamily: "var(--font-mono)", resize: "vertical", minHeight: 140 }}
-            />
-            <div style={{ ...MONO, fontSize: 10, color: "var(--fg-4)", marginTop: 6, lineHeight: 1.6 }}>
-              Format: <code>provider-model-slug | Display Name 128k ctx vision</code><br />
-              Slug is what gets sent to the provider. Display name + tags are optional.
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={LABEL}>models</span>
+              <button
+                type="button"
+                onClick={addModel}
+                style={{
+                  ...MONO,
+                  fontSize: 10,
+                  padding: "5px 10px",
+                  background: "transparent",
+                  color: "var(--fg-2)",
+                  border: "1px solid var(--stroke-1)",
+                  borderRadius: "var(--r-1)",
+                  cursor: "pointer",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                + add model
+              </button>
             </div>
+            {draft.models.length === 0 ? (
+              <div
+                style={{
+                  border: "1px dashed var(--stroke-1)",
+                  borderRadius: "var(--r-2)",
+                  padding: 16,
+                  textAlign: "center",
+                  color: "var(--fg-3)",
+                  fontSize: 12,
+                }}
+              >
+                No models yet - click &ldquo;+ add model&rdquo;
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {draft.models.map((m, i) => (
+                  <ModelRow
+                    key={i}
+                    model={m}
+                    onChange={(next) => setModel(i, next)}
+                    onRemove={() => removeModel(i)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
+
           {err && <div style={{ color: "var(--signal-err)", fontSize: 12, marginBottom: 10 }}>{err}</div>}
           <div style={{ display: "flex", gap: 8 }}>
             <button
@@ -343,8 +465,7 @@ mistralai/Mixtral-8x22B-Instruct-v0.1 | Mixtral 8x22B 64k ctx`}
                 key={p.id}
                 style={{
                   background: "var(--surface-1)",
-                  border: "1px solid",
-                  borderColor: p.enabled ? "var(--stroke-1)" : "var(--stroke-1)",
+                  border: "1px solid var(--stroke-1)",
                   borderRadius: "var(--r-2)",
                   padding: "12px 14px",
                   opacity: p.enabled ? 1 : 0.55,
