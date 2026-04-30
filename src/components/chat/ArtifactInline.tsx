@@ -7,7 +7,7 @@ interface ArtifactInlineProps {
     type: "html" | "svg" | "code" | "markdown" | "react";
     language?: string | null;
   };
-  onOpen: (artifactId: string) => void;
+  onOpen: () => void;
 }
 
 export function ArtifactInline({ artifact, onOpen }: ArtifactInlineProps) {
@@ -23,11 +23,11 @@ export function ArtifactInline({ artifact, onOpen }: ArtifactInlineProps) {
       <span className="artifact-inline__icon">{icon}</span>
       <span className="artifact-inline__label">{artifact.title}</span>
       <span className="artifact-inline__type">
-        ({artifact.type}{artifact.language ? ` · ${artifact.language}` : ""})
+        ({artifact.type}{artifact.language ? ` - ${artifact.language}` : ""})
       </span>
       <button
         className="artifact-inline__open"
-        onClick={() => onOpen(artifact.id)}
+        onClick={onOpen}
         aria-label={`Open artifact: ${artifact.title}`}
       >
         open ↗

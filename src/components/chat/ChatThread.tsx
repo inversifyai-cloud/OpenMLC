@@ -5,7 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { useRouter } from "next/navigation";
-import { MessageBubble, type AnyPart } from "./MessageBubble";
+import { MessageBubble, type AnyPart, type ArtifactRef } from "./MessageBubble";
 import { ChatComposer, type PendingAttachment, type ReasoningEffort } from "./ChatComposer";
 import { SystemPromptEditor } from "./SystemPromptEditor";
 import { SwarmInlineView } from "@/components/swarm/SwarmInlineView";
@@ -60,7 +60,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("off");
   const [swarmMode, setSwarmMode] = useState(false);
   const [artifacts, setArtifacts] = useState<ArtifactData[]>([]);
-  const [openArtifactId, setOpenArtifactId] = useState<string | null>(null);
+  const [openArtifact, setOpenArtifact] = useState<ArtifactRef | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const swarm = useSwarmStream();
 
@@ -76,19 +76,35 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
   useEffect(() => { void fetchArtifacts(); }, [fetchArtifacts]);
 
   const artifactsByMessage = useMemo(() => {
-    const map = new Map<string, ArtifactData[]>();
+    const map = new Map<string, ArtifactRef[]>();
     for (const a of artifacts) {
       const arr = map.get(a.messageId) ?? [];
-      arr.push(a);
+      arr.push({
+        id: a.id,
+        title: a.title,
+        type: a.type,
+        language: a.language ?? null,
+        content: a.content,
+      });
       map.set(a.messageId, arr);
     }
     return map;
   }, [artifacts]);
 
-  const openArtifact = useMemo(
-    () => (openArtifactId ? artifacts.find((a) => a.id === openArtifactId) ?? null : null),
-    [openArtifactId, artifacts],
-  );
+  const openArtifactData: ArtifactData | null = useMemo(() => {
+    if (!openArtifact) return null;
+    return {
+      id: openArtifact.id,
+      title: openArtifact.title,
+      type: openArtifact.type,
+      language: openArtifact.language ?? undefined,
+      content: openArtifact.content,
+      version: 1,
+      createdAt: new Date().toISOString(),
+      messageId: "",
+      conversationId,
+    };
+  }, [openArtifact, conversationId]);
 
   const modelIdRef = useRef(modelId);
   useEffect(() => { modelIdRef.current = modelId; }, [modelId]);
@@ -370,7 +386,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
                 messageId={m.id}
                 onBranch={handleBranch}
                 artifacts={artifactsByMessage.get(m.id) ?? []}
-                onOpenArtifact={setOpenArtifactId}
+                onOpenArtifact={setOpenArtifact}
               />
             );
           })}
@@ -443,8 +459,8 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
           onPersonaChange={setPersonaId}
         />
       <ArtifactsPane
-        artifact={openArtifact}
-        onClose={() => setOpenArtifactId(null)}
+        artifact={openArtifactData}
+        onClose={() => setOpenArtifact(null)}
         versions={openArtifact ? artifacts.filter((a) => a.title === openArtifact.title && a.id !== openArtifact.id) : []}
       />
     </main>

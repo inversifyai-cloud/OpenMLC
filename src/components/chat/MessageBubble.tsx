@@ -8,16 +8,30 @@ import { isImage } from "@/lib/mime";
 import type { ChatAttachment } from "@/types/chat";
 import { TtsButton } from "./TtsButton";
 import { ArtifactInline } from "./ArtifactInline";
+import { extractArtifacts, type ExtractedArtifact } from "@/lib/artifacts/extract";
 
-type ArtifactRef = {
+export type ArtifactRef = {
   id: string;
   title: string;
   type: "html" | "svg" | "code" | "markdown" | "react";
   language?: string | null;
+  content: string;
 };
 
 function stripArtifactTags(input: string): string {
   return input.replace(/<artifact\s+[^>]*>[\s\S]*?<\/artifact>/gi, "").trim();
+}
+
+function liveArtifactsFromText(text: string, messageId: string | undefined): ArtifactRef[] {
+  if (!text || !messageId) return [];
+  const extracted: ExtractedArtifact[] = extractArtifacts(text);
+  return extracted.map((a, i) => ({
+    id: `live-${messageId}-${i}`,
+    title: a.title,
+    type: a.type,
+    language: a.language ?? null,
+    content: a.content,
+  }));
 }
 
 type TextPart      = { type: "text"; text: string };
@@ -451,7 +465,7 @@ type Props = {
   messageId?: string;
   onBranch?: (messageId: string) => void;
   artifacts?: ArtifactRef[];
-  onOpenArtifact?: (artifactId: string) => void;
+  onOpenArtifact?: (artifact: ArtifactRef) => void;
 };
 
 function fmtTime(iso?: string): string {
@@ -466,7 +480,11 @@ export function MessageBubble({
   messageId, onBranch, artifacts, onOpenArtifact,
 }: Props) {
   const isUser = role === "user";
-  const cleanText = !isUser && (artifacts?.length ?? 0) > 0 ? stripArtifactTags(text) : text;
+  const liveArtifacts = !isUser ? liveArtifactsFromText(text, messageId) : [];
+  const dbArtifacts = artifacts ?? [];
+  const renderArtifacts: ArtifactRef[] =
+    dbArtifacts.length > 0 ? dbArtifacts : liveArtifacts;
+  const cleanText = !isUser && renderArtifacts.length > 0 ? stripArtifactTags(text) : text;
   const model = modelId ? getModel(modelId) : null;
   const modelName = model?.name?.toLowerCase() ?? modelId ?? null;
   const modelShort = modelId
@@ -597,10 +615,14 @@ export function MessageBubble({
                   ) : null
                 )}
 
-                {!isUser && artifacts && artifacts.length > 0 && onOpenArtifact && (
+                {!isUser && renderArtifacts.length > 0 && onOpenArtifact && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
-                    {artifacts.map((a) => (
-                      <ArtifactInline key={a.id} artifact={a} onOpen={onOpenArtifact} />
+                    {renderArtifacts.map((a) => (
+                      <ArtifactInline
+                        key={a.id}
+                        artifact={a}
+                        onOpen={() => onOpenArtifact(a)}
+                      />
                     ))}
                   </div>
                 )}
