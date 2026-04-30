@@ -518,6 +518,17 @@ type Props = {
   onBranch?: (messageId: string) => void;
   artifacts?: ArtifactRef[];
   onOpenArtifact?: (artifact: ArtifactRef) => void;
+  /* edit-feature */
+  onEdit?: (messageId: string, newContent: string) => Promise<void>;
+  superseded?: boolean;
+  /* reroll-feature: assistant-only callbacks + pager state */
+  onReroll?: (messageId: string) => void;
+  variants?: {
+    count: number;
+    current: number; // 1-based for display
+    onPrev: () => void;
+    onNext: () => void;
+  };
 };
 
 function fmtTime(iso?: string): string {
@@ -530,8 +541,15 @@ export function MessageBubble({
   role, parts, text, modelId, streaming, createdAt,
   profileMonogram, profileDisplayName, attachments, reasoning,
   messageId, onBranch, artifacts, onOpenArtifact,
+  onEdit, superseded, /* edit-feature */
+  onReroll, variants, /* reroll-feature */
 }: Props) {
   const isUser = role === "user";
+  /* edit-feature: inline edit state for user messages */
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(text);
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
   const liveArtifacts = !isUser ? liveArtifactsFromText(text, messageId) : [];
   const dbArtifacts = artifacts ?? [];
   const renderArtifacts: ArtifactRef[] =
@@ -592,6 +610,42 @@ export function MessageBubble({
                 branch
               </button>
             )}
+            {/* reroll-feature: re-run this assistant turn */}
+            {!isUser && !streaming && messageId && onReroll && (
+              <button
+                type="button"
+                className="branch-btn"
+                onClick={() => onReroll(messageId)}
+                title="Reroll this response"
+                aria-label="Reroll this assistant response"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="23 4 23 10 17 10"/>
+                  <path d="M20.49 15A9 9 0 1 1 18 6.36L23 10"/>
+                </svg>
+                reroll
+              </button>
+            )}
+            {/* edit-feature: edit button for the user's own past messages */}
+            {isUser && !streaming && !superseded && messageId && onEdit && !editing && (
+              <button
+                type="button"
+                className="branch-btn"
+                onClick={() => {
+                  setDraft(text);
+                  setEditError(null);
+                  setEditing(true);
+                }}
+                title="Edit this message"
+                aria-label="Edit this message"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/>
+                </svg>
+                edit
+              </button>
+            )}
             {!isUser && !streaming && messageId && text.trim().length > 0 && (
               // TODO: read Profile.ttsAutoPlay and pass through as autoPlay prop
               <TtsButton messageId={messageId} text={text} />
@@ -621,9 +675,82 @@ export function MessageBubble({
             </div>
           )}
 
-          <div className="text">
+          <div className={`text${superseded ? " msg-superseded" : ""}`}>
             {isUser ? (
-              <p style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{text}</p>
+              editing && onEdit && messageId ? (
+                /* edit-feature: inline editor */
+                <div>
+                  <textarea
+                    className="msg-edit-textarea"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        setEditing(false);
+                        setEditError(null);
+                      } else if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                        e.preventDefault();
+                        const trimmed = draft.trim();
+                        if (!trimmed || saving) return;
+                        setSaving(true);
+                        setEditError(null);
+                        onEdit(messageId, trimmed)
+                          .then(() => {
+                            setEditing(false);
+                          })
+                          .catch((err: unknown) => {
+                            setEditError(err instanceof Error ? err.message : "edit failed");
+                          })
+                          .finally(() => setSaving(false));
+                      }
+                    }}
+                    rows={Math.min(20, Math.max(2, draft.split("\n").length + 1))}
+                    autoFocus
+                    disabled={saving}
+                    aria-label="Edit message"
+                  />
+                  <div className="msg-edit-actions">
+                    <button
+                      type="button"
+                      className="branch-btn"
+                      onClick={() => {
+                        setEditing(false);
+                        setEditError(null);
+                      }}
+                      disabled={saving}
+                    >
+                      cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="branch-btn primary"
+                      onClick={() => {
+                        const trimmed = draft.trim();
+                        if (!trimmed || saving) return;
+                        setSaving(true);
+                        setEditError(null);
+                        onEdit(messageId, trimmed)
+                          .then(() => {
+                            setEditing(false);
+                          })
+                          .catch((err: unknown) => {
+                            setEditError(err instanceof Error ? err.message : "edit failed");
+                          })
+                          .finally(() => setSaving(false));
+                      }}
+                      disabled={saving || !draft.trim()}
+                    >
+                      {saving ? "saving…" : "save"}
+                    </button>
+                    {editError && (
+                      <span className="msg-edit-error">{editError}</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{text}</p>
+              )
             ) : (
               <>
 
@@ -686,6 +813,50 @@ export function MessageBubble({
                 {parts && <SourceChips parts={parts} />}
 
                 {streaming && <span className="cursor" />}
+
+                {/* reroll-feature: variant pager (only when > 1 sibling) */}
+                {!streaming && variants && variants.count > 1 && (
+                  <div
+                    className="variant-pager"
+                    role="group"
+                    aria-label="Response variants"
+                    style={{
+                      marginTop: 8,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      color: "var(--fg-3)",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="branch-btn"
+                      onClick={variants.onPrev}
+                      disabled={variants.current <= 1}
+                      aria-label="Previous variant"
+                      title="Previous variant"
+                      style={{ padding: "2px 6px" }}
+                    >
+                      ‹
+                    </button>
+                    <span aria-live="polite">
+                      {variants.current} of {variants.count}
+                    </span>
+                    <button
+                      type="button"
+                      className="branch-btn"
+                      onClick={variants.onNext}
+                      disabled={variants.current >= variants.count}
+                      aria-label="Next variant"
+                      title="Next variant"
+                      style={{ padding: "2px 6px" }}
+                    >
+                      ›
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>

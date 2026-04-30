@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, JetBrains_Mono } from "next/font/google";
 import { Providers } from "./providers";
+import { KeyboardShortcuts } from "@/components/chrome/KeyboardShortcuts";
 import "./globals.css";
 
 const sans = Geist({
@@ -55,7 +56,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
       </head>
       <body suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <KeyboardShortcuts />
+        </Providers>
       </body>
     </html>
   );

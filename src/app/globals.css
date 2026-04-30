@@ -9,7 +9,9 @@
 @import "../styles/home.css";
 @import "../styles/inbox.css";
 @import "../styles/library.css";
+@import "../styles/search.css";
 @import "../styles/settings.css";
+@import "../styles/palette.css";
 @import "../styles/sections-clean.css";
 @import "tailwindcss";
 

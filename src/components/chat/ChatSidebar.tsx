@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { AvatarMonogram } from "@/components/chrome/AvatarMonogram";
 import { LogoutButton } from "./LogoutButton";
-import { CommandPalette } from "./CommandPalette";
 import { FolderManager, type Folder } from "./FolderManager";
 import { ConvContextMenu } from "./ConvContextMenu";
 import type { ConversationSummary } from "@/types/chat";
@@ -96,7 +95,6 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
   const [conversations, setConversations] = useState<ConvExt[]>(initialConversations);
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState("");
-  const [paletteOpen, setPaletteOpen] = useState(false);
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
@@ -133,17 +131,6 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [activeId]);
-
-  useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setPaletteOpen((o) => !o);
-      }
-    }
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
 
   const filtered = useMemo(() => {
     if (!filter.trim()) return conversations;
@@ -231,8 +218,6 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
 
   return (
     <>
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-
       {contextMenu && (
         <ConvContextMenu
           x={contextMenu.x}
@@ -285,7 +270,17 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
           <span className="kbd">⌘N</span>
         </button>
 
-        <div className="side-search" onClick={() => setPaletteOpen(true)} style={{ cursor: "pointer" }}>
+        <div
+          className="side-search"
+          onClick={() => {
+            // The Cmd+K palette is mounted globally now; synthesize the
+            // shortcut so the global listener opens it.
+            window.dispatchEvent(
+              new KeyboardEvent("keydown", { key: "k", metaKey: true, ctrlKey: true })
+            );
+          }}
+          style={{ cursor: "pointer" }}
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <circle cx="10" cy="10" r="6" />
             <path d="M14.5 14.5l5 5" />

@@ -11,6 +11,7 @@ const NAV_LINKS: Array<{ href: string; label: string }> = [
   { href: "/chat", label: "chat" },
   { href: "/spaces", label: "spaces" },
   { href: "/library", label: "library" },
+  { href: "/search", label: "search" },
   { href: "/inbox", label: "inbox" },
 ];
 

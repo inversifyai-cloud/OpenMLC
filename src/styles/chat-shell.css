@@ -412,6 +412,33 @@
   padding: 22px 32px;
 }
 .msg-wrap + .msg-wrap { border-top: 1px solid var(--stroke-1); }
+
+/* search-flash — pulse a border-left when arriving from /search?msg=… */
+.msg-wrap[data-flash="true"] {
+  position: relative;
+  animation: msg-flash 1.5s ease-out forwards;
+}
+.msg-wrap[data-flash="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--signal-ok, #22c55e);
+  animation: msg-flash-bar 1.5s ease-out forwards;
+}
+@keyframes msg-flash {
+  0%   { background: color-mix(in oklch, var(--signal-ok, #22c55e) 14%, transparent); }
+  60%  { background: color-mix(in oklch, var(--signal-ok, #22c55e) 8%,  transparent); }
+  100% { background: transparent; }
+}
+@keyframes msg-flash-bar {
+  0%   { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .msg { display: flex; gap: 14px; align-items: flex-start; }
 
 /* Avatars — hairline-circumscribed monograms, like a manuscript drop-cap. */
@@ -542,6 +569,78 @@
 }
 .msg:hover .branch-btn { opacity: 1; }
 .branch-btn:hover { color: var(--fg-accent); border-color: var(--stroke-focus); }
+.branch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.branch-btn.primary {
+  color: var(--fg-1);
+  border-color: var(--stroke-2);
+  background: var(--bg-sunken);
+}
+.branch-btn.primary:hover { color: var(--fg-accent); border-color: var(--stroke-focus); }
+
+/* edit-feature: inline editor for user messages */
+.msg-edit-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-canvas);
+  border: 1px solid var(--stroke-2);
+  border-radius: var(--r-2);
+  color: var(--fg-1);
+  font-family: inherit;
+  font-size: 14.5px;
+  line-height: 1.65;
+  padding: 8px 10px;
+  resize: vertical;
+  min-height: 56px;
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.msg-edit-textarea:focus {
+  border-color: var(--stroke-focus);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--fg-accent) 40%, transparent);
+}
+.msg-edit-textarea:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.msg-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.msg-edit-actions .branch-btn { opacity: 1; margin-left: 0; }
+.msg-edit-error {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--signal-err);
+  letter-spacing: 0.04em;
+  margin-left: 4px;
+}
+
+/* edit-feature: superseded turns reveal */
+.msg-superseded-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px dashed var(--stroke-1);
+  border-radius: var(--r-1);
+  color: var(--fg-4);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  cursor: pointer;
+  margin: 8px 0 4px;
+  transition: color 120ms, border-color 120ms;
+}
+.msg-superseded-toggle:hover {
+  color: var(--fg-accent);
+  border-color: var(--stroke-focus);
+}
+
+.msg-superseded { opacity: 0.55; }
+
 
 .text { font-size: 14.5px; line-height: 1.7; color: var(--fg-1); }
 .text > * + * { margin-top: 10px; }

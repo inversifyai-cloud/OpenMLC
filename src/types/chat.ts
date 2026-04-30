@@ -48,6 +48,10 @@ export type ChatMessage = {
   reasoning?: string | null;
   createdAt: string;
   attachments?: ChatAttachment[];
+  // reroll-feature: optional variant fields (older callers ignore them).
+  parentUserMessageId?: string | null;
+  variantIndex?: number;
+  supersededAt?: string | null;
 };
 
 export type ConversationSummary = {

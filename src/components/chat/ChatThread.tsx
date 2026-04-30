@@ -36,7 +36,13 @@ type Props = {
   initialSystemPrompt?: string;
   initialPersonaId?: string | null;
   initialMessages: ChatMessage[];
+  /* edit-feature: pre-loaded superseded messages for the "show" toggle */
+  supersededMessages?: ChatMessage[];
+  /* reroll-feature: JSON-encoded selected variants map */
+  initialSelectedVariants?: string;
   profile: { avatarMonogram: string; displayName: string };
+  /* search-flash: deep-link target from /search?msg=… */
+  flashMessageId?: string | null;
 };
 
 function dbToUiMessages(rows: ChatMessage[]): UIMessage[] {
@@ -49,7 +55,7 @@ function dbToUiMessages(rows: ChatMessage[]): UIMessage[] {
     }));
 }
 
-export function ChatThread({ conversationId, initialModelId, initialTitle, initialSystemPrompt = "", initialPersonaId = null, initialMessages, profile }: Props) {
+export function ChatThread({ conversationId, initialModelId, initialTitle, initialSystemPrompt = "", initialPersonaId = null, initialMessages, supersededMessages = [], initialSelectedVariants = "{}", profile, flashMessageId = null }: Props) {
   const router = useRouter();
   const [modelId, setModelId] = useState(initialModelId);
   const [systemPrompt, setSystemPrompt] = useState(initialSystemPrompt);
@@ -66,6 +72,9 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
   const [openArtifact, setOpenArtifact] = useState<ArtifactRef | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const swarm = useSwarmStream();
+  /* edit-feature: track historical superseded turns + reveal toggle */
+  const [supersededHistory, setSupersededHistory] = useState<ChatMessage[]>(supersededMessages);
+  const [showSuperseded, setShowSuperseded] = useState(false);
 
   const fetchArtifacts = useCallback(async () => {
     try {
@@ -93,6 +102,48 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
     }
     return map;
   }, [artifacts]);
+
+  /* reroll-feature: state for variant pager + selected map.
+   * `assistantVariants` is keyed by parentUserMessageId.
+   * `selectedVariants` mirrors Conversation.selectedVariants. */
+  const [assistantVariants, setAssistantVariants] = useState<
+    Record<string, ChatMessage[]>
+  >(() => {
+    const map: Record<string, ChatMessage[]> = {};
+    for (const m of initialMessages) {
+      if (m.role === "assistant" && m.parentUserMessageId) {
+        const arr = map[m.parentUserMessageId] ?? [];
+        arr.push(m);
+        map[m.parentUserMessageId] = arr;
+      }
+    }
+    for (const k of Object.keys(map)) {
+      map[k].sort((a, b) => (a.variantIndex ?? 0) - (b.variantIndex ?? 0));
+    }
+    return map;
+  });
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, number>>(() => {
+    try {
+      const parsed = JSON.parse(initialSelectedVariants);
+      if (parsed && typeof parsed === "object") return parsed as Record<string, number>;
+    } catch {}
+    return {};
+  });
+
+  /* reroll-feature: which assistant message id is "visible" for each parent.
+   * Falls back to the latest variant when nothing is selected. */
+  const visibleVariantIdByParent = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const [parentId, arr] of Object.entries(assistantVariants)) {
+      if (!arr.length) continue;
+      const desired = selectedVariants[parentId];
+      const pick =
+        arr.find((v) => (v.variantIndex ?? 0) === desired) ??
+        arr[arr.length - 1];
+      out[parentId] = pick.id;
+    }
+    return out;
+  }, [assistantVariants, selectedVariants]);
 
   const openArtifactData: ArtifactData | null = useMemo(() => {
     if (!openArtifact) return null;
@@ -170,7 +221,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
     });
   }
 
-  const { messages, sendMessage, stop, status, setMessages } = useChat({
+  const { messages, sendMessage, stop, status, setMessages, regenerate } = useChat({
     id: conversationId,
     messages: dbToUiMessages(initialMessages),
     transport: transportRef.current,
@@ -202,6 +253,32 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
     pendingModelRef.current = null;
     pendingAttachmentsRef.current = [];
     setReasoningEffort("off");
+    /* edit-feature: reset reveal-toggle when navigating between threads */
+    setSupersededHistory(supersededMessages);
+    setShowSuperseded(false);
+    /* reroll-feature: rebuild variants map + selected map on convo switch */
+    {
+      const vmap: Record<string, ChatMessage[]> = {};
+      for (const m of initialMessages) {
+        if (m.role === "assistant" && m.parentUserMessageId) {
+          const arr = vmap[m.parentUserMessageId] ?? [];
+          arr.push(m);
+          vmap[m.parentUserMessageId] = arr;
+        }
+      }
+      for (const k of Object.keys(vmap)) {
+        vmap[k].sort((a, b) => (a.variantIndex ?? 0) - (b.variantIndex ?? 0));
+      }
+      setAssistantVariants(vmap);
+      try {
+        const parsed = JSON.parse(initialSelectedVariants);
+        setSelectedVariants(
+          parsed && typeof parsed === "object" ? (parsed as Record<string, number>) : {},
+        );
+      } catch {
+        setSelectedVariants({});
+      }
+    }
 
   }, [conversationId]);
 
@@ -220,6 +297,27 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, status, swarm.status]);
+
+  // search-flash: deep-link from /search?msg=… → scroll + pulse the target row
+  useEffect(() => {
+    if (!flashMessageId) return;
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const idx = initialMessages.findIndex((m) => m.id === flashMessageId);
+    if (idx < 0) return;
+    // The .msg-wrap nodes inside the scroller are 1:1 with rendered messages.
+    const wraps = scroller.querySelectorAll<HTMLElement>(".msg-wrap");
+    const target = wraps[idx];
+    if (!target) return;
+    target.setAttribute("data-flash", "true");
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    const t = window.setTimeout(() => {
+      target.removeAttribute("data-flash");
+    }, 1500);
+    return () => window.clearTimeout(t);
+    // Intentionally fire once per conversation+flashId combo.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flashMessageId, conversationId]);
 
   const swarmInjectedRef = useRef(false);
   useEffect(() => {
@@ -319,6 +417,175 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
     }
   }
 
+  /* reroll-feature: POST /api/messages/[id]/reroll, append the streaming
+   * variant into the thread, optimistically select it. */
+  async function handleReroll(messageId: string) {
+    try {
+      // Same id-remap dance as handleBranch — the AI SDK assigns
+      // ephemeral ids to fresh stream messages; we need the server id.
+      let serverId = messageId;
+      const localIdx = messages.findIndex((m) => m.id === messageId);
+      try {
+        const probe = await fetch(`/api/conversations/${conversationId}`);
+        if (probe.ok) {
+          const data = (await probe.json()) as {
+            conversation?: { messages?: Array<{ id: string; role: string }> };
+            messages?: Array<{ id: string; role: string }>;
+          };
+          const serverMsgs = data.conversation?.messages ?? data.messages ?? [];
+          if (localIdx >= 0 && serverMsgs[localIdx]?.id) {
+            serverId = serverMsgs[localIdx].id;
+          } else {
+            const lastAssistant = [...serverMsgs].reverse().find((m) => m.role === "assistant");
+            if (lastAssistant) serverId = lastAssistant.id;
+          }
+        }
+      } catch {}
+
+      const res = await fetch(`/api/messages/${encodeURIComponent(serverId)}/reroll`, {
+        method: "POST",
+      });
+      if (!res.ok || !res.body) {
+        let msg = "reroll failed";
+        try {
+          const data = (await res.json()) as { error?: string; message?: string };
+          msg = data?.message ?? data?.error ?? msg;
+        } catch {}
+        throw new Error(msg);
+      }
+
+      // Drain the UI-message stream into a synthetic assistant bubble.
+      const newId = `reroll-${Date.now()}`;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: newId,
+          role: "assistant" as const,
+          parts: [{ type: "text" as const, text: "" }],
+        },
+      ]);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffered = "";
+      let acc = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffered += decoder.decode(value, { stream: true });
+        const lines = buffered.split("\n");
+        buffered = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line) continue;
+          const m = line.match(/^0:(.*)$/);
+          if (m) {
+            try {
+              const parsed = JSON.parse(m[1]);
+              if (typeof parsed === "string") acc += parsed;
+            } catch {
+              acc += m[1];
+            }
+          }
+        }
+        const snapshot = acc;
+        setMessages((prev) =>
+          prev.map((mm) =>
+            mm.id === newId
+              ? { ...mm, parts: [{ type: "text" as const, text: snapshot }] }
+              : mm,
+          ),
+        );
+      }
+
+      // After stream completes, refresh from server so the persisted
+      // variant + updated selectedVariants take over from our synthetic.
+      router.refresh();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "reroll failed");
+    }
+  }
+
+  /* reroll-feature: switch the visible variant for a parent user message */
+  async function handleSelectVariant(parentUserMessageId: string, variantIndex: number) {
+    setSelectedVariants((prev) => ({ ...prev, [parentUserMessageId]: variantIndex }));
+    try {
+      await fetch(`/api/conversations/${conversationId}/select-variant`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userMessageId: parentUserMessageId, variantIndex }),
+      });
+    } catch {
+      /* swallow — UI is optimistic */
+    }
+  }
+
+  /* edit-feature: edit a user message, truncate the thread, re-stream */
+  async function handleEdit(messageId: string, newContent: string) {
+    const trimmed = newContent.trim();
+    if (!trimmed) throw new Error("empty content");
+
+    if (status === "streaming" || status === "submitted") {
+      try { stop(); } catch {}
+    }
+
+    const res = await fetch(`/api/messages/${encodeURIComponent(messageId)}/edit`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content: trimmed }),
+    });
+    if (!res.ok) {
+      let msg = "edit failed";
+      try {
+        const data = (await res.json()) as { error?: string };
+        if (data?.error) msg = data.error;
+      } catch {}
+      throw new Error(msg);
+    }
+    const data = (await res.json()) as { conversationId: string; truncatedMessageIds: string[] };
+    const truncated = new Set(data.truncatedMessageIds);
+
+    // Snapshot of newly-superseded messages so the user can still reveal them
+    // without an extra round-trip.
+    const nowSuperseded: ChatMessage[] = [];
+    for (const m of initialMessages) {
+      if (truncated.has(m.id)) {
+        nowSuperseded.push({ ...m, supersededAt: new Date().toISOString() });
+      }
+    }
+    if (nowSuperseded.length > 0) {
+      setSupersededHistory((prev) => [...prev, ...nowSuperseded]);
+    }
+
+    // Trim local UI state: keep messages up to and including the edited one,
+    // updating its text in place. Drop everything after.
+    let editedFound = false;
+    setMessages((prev) => {
+      const next: typeof prev = [];
+      for (const m of prev) {
+        if (m.id === messageId) {
+          editedFound = true;
+          next.push({
+            ...m,
+            parts: [{ type: "text" as const, text: trimmed }],
+          });
+          break;
+        }
+        next.push(m);
+      }
+      return editedFound ? next : prev;
+    });
+
+    pendingAttachmentsRef.current = [];
+    pendingModelRef.current = modelIdRef.current;
+
+    // Trigger a fresh assistant turn off the truncated history.
+    try {
+      await regenerate();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "regenerate failed");
+    }
+  }
+
   function handleSubmit() {
     const text = input.trim();
     const readyAttachments = pendingAttachments.filter((a) => !a.uploading);
@@ -392,8 +659,23 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
             </div>
           )}
 
-          {messages.map((m, i) => {
-            const isLast = i === messages.length - 1;
+          {/* reroll-feature: hide assistant variants that aren't the
+              currently-selected one for their parent user message. The
+              `dbMessage` lookup tells us which assistant rows have a
+              parent in DB; everything else (legacy + freshly streamed)
+              passes through untouched. */}
+          {messages
+            .filter((m) => {
+              if (m.role !== "assistant") return true;
+              const db = initialMessages.find((im) => im.id === m.id);
+              const parentId = db?.parentUserMessageId;
+              if (!parentId) return true;
+              const visibleId = visibleVariantIdByParent[parentId];
+              if (!visibleId) return true;
+              return m.id === visibleId;
+            })
+            .map((m, i, visibleArr) => {
+            const isLast = i === visibleArr.length - 1;
             const text = m.parts
               ?.filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
               ?.map((p) => p.text)
@@ -415,6 +697,30 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
 
             const dbMessage = initialMessages.find((im) => im.id === m.id);
             const reasoning = liveReasoning || dbMessage?.reasoning || null;
+            /* reroll-feature: build pager state if this assistant has siblings */
+            let variantsProp:
+              | { count: number; current: number; onPrev: () => void; onNext: () => void }
+              | undefined;
+            if (m.role === "assistant" && dbMessage?.parentUserMessageId) {
+              const parentId = dbMessage.parentUserMessageId;
+              const siblings = assistantVariants[parentId] ?? [];
+              if (siblings.length > 1) {
+                const idx = siblings.findIndex((s) => s.id === m.id);
+                const current1 = idx >= 0 ? idx + 1 : 1;
+                variantsProp = {
+                  count: siblings.length,
+                  current: current1,
+                  onPrev: () => {
+                    const prev = siblings[Math.max(0, idx - 1)];
+                    if (prev) void handleSelectVariant(parentId, prev.variantIndex ?? 0);
+                  },
+                  onNext: () => {
+                    const next = siblings[Math.min(siblings.length - 1, idx + 1)];
+                    if (next) void handleSelectVariant(parentId, next.variantIndex ?? 0);
+                  },
+                };
+              }
+            }
             return (
               <MessageBubble
                 key={m.id}
@@ -431,9 +737,43 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
                 onBranch={handleBranch}
                 artifacts={artifactsByMessage.get(m.id) ?? []}
                 onOpenArtifact={setOpenArtifact}
+                /* edit-feature */
+                onEdit={m.role === "user" ? handleEdit : undefined}
+                /* reroll-feature */
+                onReroll={m.role === "assistant" ? handleReroll : undefined}
+                variants={variantsProp}
               />
             );
           })}
+
+          {/* edit-feature: superseded turns toggle + faded historical bubbles */}
+          {supersededHistory.length > 0 && (
+            <div className="msg-wrap">
+              <button
+                type="button"
+                className="msg-superseded-toggle"
+                onClick={() => setShowSuperseded((v) => !v)}
+                aria-expanded={showSuperseded}
+              >
+                {showSuperseded ? "hide" : "show"} superseded turns ({supersededHistory.length})
+              </button>
+            </div>
+          )}
+          {showSuperseded && supersededHistory.map((m) => (
+            <MessageBubble
+              key={`sup-${m.id}`}
+              role={m.role as "user" | "assistant"}
+              text={m.content}
+              modelId={m.role === "assistant" ? m.modelId ?? undefined : undefined}
+              streaming={false}
+              profileMonogram={profile.avatarMonogram}
+              profileDisplayName={profile.displayName}
+              attachments={m.attachments}
+              reasoning={m.reasoning ?? null}
+              messageId={m.id}
+              superseded
+            />
+          ))}
 
           {swarm.status !== "idle" && (
             <div className="msg-wrap">
