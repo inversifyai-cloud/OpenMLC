@@ -12,8 +12,8 @@ const bodySchema = z.object({
 
   override: z
     .object({
-      minAgents: z.number().int().min(1).max(10).optional(),
-      maxAgents: z.number().int().min(1).max(10).optional(),
+      minAgents: z.number().int().min(1).max(100).optional(),
+      maxAgents: z.number().int().min(1).max(100).optional(),
       reasoningEffort: z.enum(["low", "medium", "high"]).optional(),
       enabledProviders: z.array(z.string()).optional(),
       supervisorModel: z.string().optional(),

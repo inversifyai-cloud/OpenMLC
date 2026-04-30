@@ -19,6 +19,7 @@ export async function GET() {
       pinned: true,
       archived: true,
       folderId: true,
+      spaceId: true,
       updatedAt: true,
     },
   });
@@ -28,6 +29,7 @@ export async function GET() {
 const createSchema = z.object({
   modelId: z.string().min(1).optional(),
   personaId: z.string().min(1).optional(),
+  spaceId: z.string().min(1).nullable().optional(),
 });
 
 export async function POST(req: Request) {
@@ -43,6 +45,21 @@ export async function POST(req: Request) {
   const parsed = createSchema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: "invalid input" }, { status: 400 });
 
+  let spaceId: string | null = null;
+  let spaceDefaultPersonaId: string | null = null;
+  let spaceDefaultModel: string | null = null;
+  if (parsed.data.spaceId) {
+    const space = await db.space.findUnique({
+      where: { id: parsed.data.spaceId },
+      select: { id: true, profileId: true, defaultPersonaId: true, defaultModel: true },
+    });
+    if (space && space.profileId === session.profileId) {
+      spaceId = space.id;
+      spaceDefaultPersonaId = space.defaultPersonaId;
+      spaceDefaultModel = space.defaultModel;
+    }
+  }
+
   let personaId: string | null = null;
   let personaModelId: string | null = null;
   if (parsed.data.personaId) {
@@ -53,6 +70,16 @@ export async function POST(req: Request) {
     if (persona && persona.profileId === session.profileId) {
       personaId = persona.id;
       personaModelId = persona.defaultModel ?? null;
+    }
+  }
+  if (!personaId && spaceDefaultPersonaId) {
+    const sp = await db.persona.findUnique({
+      where: { id: spaceDefaultPersonaId },
+      select: { id: true, profileId: true, defaultModel: true },
+    });
+    if (sp && sp.profileId === session.profileId) {
+      personaId = sp.id;
+      personaModelId = sp.defaultModel ?? null;
     }
   }
   if (!personaId) {
@@ -66,7 +93,8 @@ export async function POST(req: Request) {
     }
   }
 
-  const requestedModelId = parsed.data.modelId ?? personaModelId ?? null;
+  const requestedModelId =
+    parsed.data.modelId ?? personaModelId ?? spaceDefaultModel ?? null;
   const modelId = requestedModelId
     ? ((await findModel(requestedModelId)) ? requestedModelId : getDefaultModel().id)
     : getDefaultModel().id;
@@ -77,8 +105,9 @@ export async function POST(req: Request) {
       modelId,
       title: "new conversation",
       personaId,
+      spaceId,
     },
-    select: { id: true, title: true, modelId: true, pinned: true, archived: true, folderId: true, updatedAt: true, personaId: true },
+    select: { id: true, title: true, modelId: true, pinned: true, archived: true, folderId: true, spaceId: true, updatedAt: true, personaId: true },
   });
   return NextResponse.json({ conversation });
 }

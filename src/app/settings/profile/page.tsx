@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { AvatarMonogram } from "@/components/chrome/AvatarMonogram";
+import { StartScreenToggle } from "@/components/home/StartScreenToggle";
 import type { AvatarAccent } from "@/types/profile";
 
 export const dynamic = "force-dynamic";
@@ -12,9 +13,19 @@ export default async function ProfileSettingsPage() {
 
   const profile = await db.profile.findUnique({
     where: { id: session.profileId },
-    select: { displayName: true, username: true, avatarMonogram: true, avatarAccent: true, createdAt: true },
+    select: {
+      displayName: true,
+      username: true,
+      avatarMonogram: true,
+      avatarAccent: true,
+      createdAt: true,
+      startScreen: true,
+    },
   });
   if (!profile) redirect("/profiles");
+
+  const startScreen: "home" | "chat" =
+    profile.startScreen === "chat" ? "chat" : "home";
 
   return (
     <div style={{ maxWidth: 720 }}>
@@ -48,6 +59,8 @@ export default async function ProfileSettingsPage() {
         password reset is operator-only via the cli:{" "}
         <code style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>npm run openmlc -- reset-password {profile.username}</code>
       </p>
+
+      <StartScreenToggle initial={startScreen} />
     </div>
   );
 }

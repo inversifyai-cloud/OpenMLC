@@ -1,5 +1,6 @@
 import { streamText } from "ai";
 import { db } from "@/lib/db";
+import { recordInboxEntry } from "@/lib/inbox";
 import { getProviderModel } from "@/lib/providers";
 import { resolveProviderKey } from "@/lib/providers/resolve-key";
 import { findModel } from "@/lib/providers/catalog";
@@ -144,6 +145,23 @@ export async function orchestrateSwarm(opts: {
       data: { status: "completed", finalOutput, completedAt: new Date() },
     });
     bus.emit({ type: "complete", finalOutput });
+
+    // inbox: swarm completion entry
+    {
+      const promptText = (opts.prompt ?? "").trim();
+      const title = promptText
+        ? (promptText.length > 100 ? promptText.slice(0, 99) + "…" : promptText)
+        : "swarm run";
+      const agentCount = resolvedAgents.length;
+      void recordInboxEntry({
+        profileId: opts.profileId,
+        kind: "swarm_run",
+        title,
+        summary: `${agentCount} agent${agentCount === 1 ? "" : "s"} synthesized`,
+        refType: "swarm_run",
+        refId: opts.swarmRunId,
+      });
+    }
 
     if (opts.conversationId && finalOutput) {
       try {

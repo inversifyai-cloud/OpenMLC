@@ -51,6 +51,7 @@ const patchSchema = z.object({
   archived: z.boolean().optional(),
   folderId: z.string().nullable().optional(),
   personaId: z.string().min(1).nullable().optional(),
+  spaceId: z.string().min(1).nullable().optional(),
 });
 
 export async function PATCH(req: Request, ctx: RouteCtx) {
@@ -82,10 +83,20 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
     }
   }
 
+  if (data.spaceId) {
+    const space = await db.space.findUnique({
+      where: { id: data.spaceId },
+      select: { id: true, profileId: true },
+    });
+    if (!space || space.profileId !== auth.profileId) {
+      return NextResponse.json({ error: "unknown space" }, { status: 400 });
+    }
+  }
+
   const conversation = await db.conversation.update({
     where: { id: conversationId },
     data,
-    select: { id: true, title: true, modelId: true, pinned: true, archived: true, folderId: true, personaId: true, updatedAt: true },
+    select: { id: true, title: true, modelId: true, pinned: true, archived: true, folderId: true, spaceId: true, personaId: true, updatedAt: true },
   });
   return NextResponse.json({ conversation });
 }

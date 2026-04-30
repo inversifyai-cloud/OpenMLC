@@ -29,6 +29,8 @@ model Profile {
   memoryAutoExtract     Boolean @default(true)
   memoryUseInContext    Boolean @default(true)
 
+  startScreen           String  @default("home") // "home" | "chat"
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -50,6 +52,8 @@ model Profile {
   promptTemplates PromptTemplate[]
   customProviders CustomProvider[]
   connectors      Connector[]
+  spaces          Space[]
+  inboxEntries    InboxEntry[]
 }
 
 model ProfileSession {
@@ -90,10 +94,12 @@ model Conversation {
   updatedAt             DateTime @updatedAt
 
   folderId              String?
+  spaceId               String?
 
   profile   Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
   folder    Folder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
   persona   Persona?   @relation(fields: [personaId], references: [id], onDelete: SetNull)
+  space     Space?     @relation(fields: [spaceId], references: [id], onDelete: SetNull)
   messages  Message[]
   swarmRuns SwarmRun[]
   shares    ConversationShare[]
@@ -102,6 +108,7 @@ model Conversation {
   @@index([profileId, updatedAt])
   @@index([folderId])
   @@index([personaId])
+  @@index([spaceId])
 }
 
 model Message {
@@ -156,10 +163,14 @@ model KnowledgeFile {
   embeddingStatus String   @default("pending")
   createdAt       DateTime @default(now())
 
+  spaceId         String?
+
   profile Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  space   Space?           @relation(fields: [spaceId], references: [id], onDelete: SetNull)
   chunks  KnowledgeChunk[]
 
   @@index([profileId])
+  @@index([spaceId])
 }
 
 model KnowledgeChunk {
@@ -391,10 +402,14 @@ model Memory {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  spaceId      String?
+
   profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  space        Space?   @relation(fields: [spaceId], references: [id], onDelete: SetNull)
 
   @@index([profileId])
   @@index([profileId, active])
+  @@index([spaceId])
 }
 
 model Persona {
@@ -502,4 +517,46 @@ model ResearchSession {
   createdAt      DateTime @default(now())
   completedAt    DateTime?
   @@index([conversationId])
+}
+
+// ── v3 — Spaces (project-scoped workspaces) ─────────────────────────
+model Space {
+  id               String   @id @default(cuid())
+  profileId        String
+  name             String
+  emoji            String?
+  description      String?
+  systemPrompt     String?
+  defaultPersonaId String?
+  defaultModel     String?
+  archived         Boolean  @default(false)
+  position         Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  profile         Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  conversations   Conversation[]
+  knowledgeFiles  KnowledgeFile[]
+  memories        Memory[]
+
+  @@index([profileId, archived])
+  @@index([profileId, position])
+}
+
+// ── v3 — Inbox (async activity feed) ────────────────────────────────
+model InboxEntry {
+  id        String   @id @default(cuid())
+  profileId String
+  kind      String   // workflow_run | swarm_run | research_done | browser_done | schedule_fired
+  title     String
+  summary   String?
+  refType   String   // conversation | swarm_run | research_session | browser_session | workflow_run
+  refId     String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, read, createdAt])
+  @@index([profileId, createdAt])
 }

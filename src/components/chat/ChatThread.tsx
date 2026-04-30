@@ -284,10 +284,32 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
 
   async function handleBranch(messageId: string) {
     try {
+      // The AI SDK assigns its own client-side ids to freshly streamed
+      // messages. Those ids don't exist in the DB until the page reloads,
+      // so branching off a just-completed reply would 404 with
+      // "message not found." Remap to the canonical server id by ordinal.
+      let serverId = messageId;
+      const localIdx = messages.findIndex((m) => m.id === messageId);
+      try {
+        const probe = await fetch(`/api/conversations/${conversationId}`);
+        if (probe.ok) {
+          const data = (await probe.json()) as {
+            messages?: Array<{ id: string; role: string }>;
+          };
+          const serverMsgs = data.messages ?? [];
+          if (localIdx >= 0 && serverMsgs[localIdx]?.id) {
+            serverId = serverMsgs[localIdx].id;
+          } else {
+            const lastAssistant = [...serverMsgs].reverse().find((m) => m.role === "assistant");
+            if (lastAssistant) serverId = lastAssistant.id;
+          }
+        }
+      } catch {}
+
       const res = await fetch(`/api/conversations/${conversationId}/branch`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messageId }),
+        body: JSON.stringify({ messageId: serverId }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json() as { conversationId: string };

@@ -5,6 +5,10 @@
 @import "../styles/artifacts.css";
 @import "../styles/voice.css";
 @import "../styles/compare.css";
+@import "../styles/spaces.css";
+@import "../styles/home.css";
+@import "../styles/inbox.css";
+@import "../styles/library.css";
 @import "tailwindcss";
 
 @theme inline {

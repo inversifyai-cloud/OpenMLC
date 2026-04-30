@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/chrome/ThemeToggle";
 import { HamburgerButton } from "@/components/chat/ChatShell";
+import { InboxBadge } from "@/components/inbox/InboxBadge";
 
 export function TopRail() {
   const pathname = usePathname();
@@ -17,6 +18,8 @@ export function TopRail() {
         </div>
       </div>
       <div className="topbar-right">
+        {/* shell-nav: inbox badge */}
+        <InboxBadge />
         <ThemeToggle className="ico-btn" />
         <Link
           href={inSettings ? "/chat" : "/settings/api-keys"}

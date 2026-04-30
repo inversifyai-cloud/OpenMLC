@@ -20,7 +20,11 @@ type Props = {
 type ConvExt = ConversationSummary & {
   archived?: boolean;
   folderId?: string | null;
+  spaceId?: string | null;
 };
+
+// [spaces] light shape used for the in-space subhead grouping.
+type SpaceLite = { id: string; name: string; emoji: string | null };
 
 function shortModel(modelId: string): string {
   const m = getModel(modelId);
@@ -97,6 +101,19 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
   const [shareToast, setShareToast] = useState<string | null>(null);
+  // [spaces] light list of spaces for the in-space subhead.
+  const [spaces, setSpaces] = useState<SpaceLite[]>([]);
+
+  useEffect(() => {
+    fetch("/api/spaces?light=1")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (Array.isArray(d?.spaces)) {
+          setSpaces(d.spaces.filter((s: SpaceLite & { archived?: boolean }) => !s.archived));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/folders")
@@ -135,6 +152,29 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
   }, [conversations, filter]);
 
   const buckets = useMemo(() => bucketize(filtered, activeFolder), [filtered, activeFolder]);
+
+  // [spaces] Group conversations belonging to a space (renders above buckets).
+  // Conversations with spaceId === null fall through to the existing bucket logic.
+  const spaceGroups = useMemo(() => {
+    if (spaces.length === 0) return [];
+    const byId = new Map<string, ConvExt[]>();
+    for (const c of filtered) {
+      if (!c.archived && c.spaceId) {
+        const arr = byId.get(c.spaceId) ?? [];
+        arr.push(c);
+        byId.set(c.spaceId, arr);
+      }
+    }
+    return spaces
+      .map((s) => ({ space: s, rows: byId.get(s.id) ?? [] }))
+      .filter((g) => g.rows.length > 0);
+  }, [spaces, filtered]);
+
+  const rootBuckets = useMemo(() => {
+    // Filter out conversations that are already shown in a spaceGroup.
+    const filteredRoot = filtered.filter((c) => !c.spaceId);
+    return bucketize(filteredRoot, activeFolder);
+  }, [filtered, activeFolder]);
 
   async function newChat() {
     setCreating(true);
@@ -225,6 +265,26 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
       )}
 
       <aside className="sidebar">
+        {/* shell-nav */}
+        <nav className="shell-nav" aria-label="primary">
+          <Link href="/" className="shell-nav__item" prefetch={false}>
+            <span className="shell-nav__glyph" aria-hidden>·</span>
+            <span className="shell-nav__label">Home</span>
+          </Link>
+          <Link href="/library" className="shell-nav__item" prefetch={false}>
+            <span className="shell-nav__glyph" aria-hidden>·</span>
+            <span className="shell-nav__label">Library</span>
+          </Link>
+          <Link href="/inbox" className="shell-nav__item" prefetch={false}>
+            <span className="shell-nav__glyph" aria-hidden>·</span>
+            <span className="shell-nav__label">Inbox</span>
+          </Link>
+          <Link href="/spaces" className="shell-nav__item" prefetch={false}>
+            <span className="shell-nav__glyph" aria-hidden>·</span>
+            <span className="shell-nav__label">Spaces</span>
+          </Link>
+        </nav>
+
         <div className="side-head">
           <span className="side-title"><b>conversations</b></span>
           <span className="side-title">{conversations.length}</span>
@@ -260,12 +320,40 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
         </div>
 
         <div className="conv-list">
-          {buckets.length === 0 && (
+          {buckets.length === 0 && spaceGroups.length === 0 && (
             <div style={{ padding: "32px 16px", color: "var(--fg-3)", fontSize: 13, textAlign: "center" }}>
               {filter ? "no matches" : "no conversations yet"}
             </div>
           )}
-          {buckets.map((bucket) => (
+
+          {/* [spaces] in-space subheads */}
+          {spaceGroups.map(({ space, rows }) => (
+            <div key={`spc-${space.id}`}>
+              <Link href={`/spaces/${space.id}`} className="spc-side-group" prefetch={false}>
+                <span className="emoji" aria-hidden>{space.emoji || "◇"}</span>
+                <span className="name"><i>{space.name}</i></span>
+                <span className="count">{rows.length}</span>
+              </Link>
+              {rows.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/chat/${c.id}`}
+                  prefetch
+                  className={`conv ${activeId === c.id ? "active" : ""}${c.pinned ? " conv--pinned" : ""}`}
+                  onContextMenu={(e) => handleContextMenu(e, c)}
+                >
+                  <span className="title">{c.title || "untitled"}</span>
+                  <span className="meta">
+                    <span className="model">{shortModel(c.modelId)}</span>
+                    <span>·</span>
+                    <span suppressHydrationWarning>{relTime(c.updatedAt)}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ))}
+
+          {rootBuckets.map((bucket) => (
             <div key={bucket.label}>
               <div className="conv-section">
                 <span>{bucket.label}</span>

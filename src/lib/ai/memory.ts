@@ -62,9 +62,14 @@ export async function searchMemories(
   profileId: string,
   query: string,
   k = MAX_RETRIEVED,
+  opts?: { spaceId?: string | null },
 ): Promise<MemoryRow[]> {
+  // [spaces] When in a space, include space-scoped memories + root memories.
+  const spaceFilter = opts?.spaceId
+    ? { OR: [{ spaceId: opts.spaceId }, { spaceId: null }] }
+    : {};
   const all = await db.memory.findMany({
-    where: { profileId, active: true },
+    where: { profileId, active: true, ...spaceFilter },
     select: {
       id: true,
       text: true,

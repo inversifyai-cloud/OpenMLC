@@ -20,7 +20,7 @@ export default async function ChatLayout({ children }: { children: React.ReactNo
     db.conversation.findMany({
       where: { profileId: session.profileId, archived: false },
       orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
-      select: { id: true, title: true, modelId: true, pinned: true, updatedAt: true },
+      select: { id: true, title: true, modelId: true, pinned: true, updatedAt: true, spaceId: true },
     }),
   ]);
 

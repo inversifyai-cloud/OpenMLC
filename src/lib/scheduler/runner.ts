@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { CronExpressionParser } from "cron-parser";
+import { recordInboxEntry } from "@/lib/inbox";
 
 async function runScheduledChat(payload: Record<string, unknown>, runId: string): Promise<void> {
   console.log("[scheduler] would dispatch chat:", JSON.stringify(payload), "runId:", runId);
@@ -77,6 +78,16 @@ async function tick() {
             lastRunStatus: "completed",
             nextRunAt,
           },
+        });
+
+        // inbox: workflow run completed
+        void recordInboxEntry({
+          profileId: schedule.profileId,
+          kind: "workflow_run",
+          title: schedule.name || `${schedule.kind} run`,
+          summary: `cron ${schedule.cron} · ${schedule.kind} dispatched`,
+          refType: "workflow_run",
+          refId: run.id,
         });
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);

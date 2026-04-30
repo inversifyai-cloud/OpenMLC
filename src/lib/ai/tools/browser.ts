@@ -125,6 +125,11 @@ async function runStep(
     },
   });
 
+  // TODO: emit inbox entry (browser_done) when the BrowserSession transitions to
+  // status = "closed". Currently sessions remain "active" — there is no
+  // production close path. When that lands, call recordInboxEntry with
+  // kind: "browser_done", refType: "browser_session", refId: row.id.
+
   const out: Record<string, unknown> = {
     success: true,
     sessionId: row.id,

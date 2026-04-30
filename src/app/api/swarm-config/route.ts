@@ -39,8 +39,8 @@ export async function GET() {
 
 const patchSchema = z.object({
   enabledProviders: z.array(z.string()).optional(),
-  minAgents: z.number().int().min(1).max(10).optional(),
-  maxAgents: z.number().int().min(1).max(10).optional(),
+  minAgents: z.number().int().min(1).max(100).optional(),
+  maxAgents: z.number().int().min(1).max(100).optional(),
   reasoningEffort: z.enum(["low", "medium", "high"]).optional(),
   supervisorModel: z.string().min(1).optional(),
 });

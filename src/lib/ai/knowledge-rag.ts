@@ -138,17 +138,23 @@ export async function processKnowledgeFile(
 export async function searchKnowledgeBase(
   profileId: string,
   query: string,
-  options?: { topK?: number },
+  options?: { topK?: number; spaceId?: string },
 ): Promise<Array<{ content: string; filename: string; similarity: number }>> {
   const topK = options?.topK ?? TOP_K_RESULTS;
 
+  const fileWhere: Record<string, unknown> = {
+    profileId,
+    active: true,
+    embeddingStatus: "completed",
+  };
+  if (options?.spaceId) {
+    // [spaces] Include files scoped to this space PLUS root-level (null) files.
+    fileWhere.OR = [{ spaceId: options.spaceId }, { spaceId: null }];
+  }
+
   const chunks = await db.knowledgeChunk.findMany({
     where: {
-      knowledgeFile: {
-        profileId,
-        active: true,
-        embeddingStatus: "completed",
-      },
+      knowledgeFile: fileWhere,
       embedding: { not: null },
     },
     select: {
@@ -182,9 +188,9 @@ export async function searchKnowledgeBase(
 export async function buildRAGContext(
   profileId: string,
   query: string,
-  options?: { maxChars?: number },
+  options?: { maxChars?: number; spaceId?: string },
 ): Promise<string | null> {
-  const results = await searchKnowledgeBase(profileId, query, { topK: 5 });
+  const results = await searchKnowledgeBase(profileId, query, { topK: 5, spaceId: options?.spaceId });
   if (results.length === 0) return null;
 
   const maxChars = options?.maxChars ?? 6000;

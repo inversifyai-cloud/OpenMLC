@@ -32,7 +32,9 @@ export async function planSwarm(opts: {
 
   const langModel = getProviderModel(model.providerId, model.providerModelId, resolved.key, resolved.baseUrl);
 
-  const system = `You are the supervisor of a small expert agent swarm. Your job: given a user's request, decide how many agents to dispatch (between ${opts.minAgents} and ${opts.maxAgents}, inclusive) and what each agent should do. Each agent is an independent LLM that will work in parallel. After they all finish, their outputs will be synthesized.
+  const system = `You are the supervisor of an expert agent swarm. Your job: given a user's request, decide how many agents to dispatch (between ${opts.minAgents} and ${opts.maxAgents}, inclusive) and what each agent should do. Each agent is an independent LLM that will work in parallel. After they all finish, their outputs will be synthesized.
+
+Right-size the swarm to the actual question. For most questions 2–5 agents is right. For broad surveys / multi-domain research / heavy parallel exploration, use more — up to the cap. Never inflate the count just because the cap is high; only spawn agents whose task is *meaningfully distinct* from the others.
 
 Pick agents to maximize coverage and minimize overlap. Common roles: researcher (gathers facts/sources), analyst (interprets), critic (challenges assumptions), code-writer (implements), explainer (synthesizes for laypeople), planner (proposes structure).
 

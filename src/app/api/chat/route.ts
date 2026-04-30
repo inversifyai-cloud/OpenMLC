@@ -19,6 +19,8 @@ import { buildMcpTools } from "@/lib/mcp/client";
 import { recordUsage } from "@/lib/usage/record";
 import { checkBudget } from "@/lib/usage/budget";
 import { extractArtifacts } from "@/lib/artifacts/extract";
+// inbox: record completion of long-running async work (research, browser).
+import { recordInboxEntry } from "@/lib/inbox";
 
 const bodySchema = z.object({
   messages: z.array(z.any()),
@@ -84,7 +86,17 @@ export async function POST(req: Request) {
       profileId: true,
       systemPrompt: true,
       personaId: true,
+      // [spaces] inherit defaults from space when conversation has no overrides
+      spaceId: true,
       persona: { select: { systemPrompt: true } },
+      space: {
+        select: {
+          id: true,
+          name: true,
+          systemPrompt: true,
+          defaultPersonaId: true,
+        },
+      },
     },
   });
   if (!conv || conv.profileId !== profileId) {
@@ -95,6 +107,19 @@ export async function POST(req: Request) {
     where: { id: profileId },
     select: { memoryUseInContext: true },
   });
+
+  // [spaces] If a conversation lives in a space and has no persona, fall back
+  // to the space's default persona for system-prompt purposes.
+  let effectivePersonaPrompt: string | null = conv.persona?.systemPrompt ?? null;
+  if (conv.spaceId && !conv.personaId && conv.space?.defaultPersonaId) {
+    const fallback = await db.persona.findUnique({
+      where: { id: conv.space.defaultPersonaId },
+      select: { systemPrompt: true, profileId: true },
+    });
+    if (fallback && fallback.profileId === profileId) {
+      effectivePersonaPrompt = fallback.systemPrompt;
+    }
+  }
 
   let resolved: { key: string; baseUrl?: string; source: "byok" | "env" } | null = null;
   if (model.providerId === "custom") {
@@ -168,7 +193,11 @@ export async function POST(req: Request) {
   let ragContext: string | null = null;
   if (knowledgeBaseEnabled && userText) {
     try {
-      ragContext = await buildRAGContext(profileId, userText, { maxChars: 6000 });
+      // [spaces] When in a space, RAG scope = space files + root files.
+      ragContext = await buildRAGContext(profileId, userText, {
+        maxChars: 6000,
+        spaceId: conv.spaceId ?? undefined,
+      });
     } catch (err) {
       console.error("[chat] RAG lookup failed", err);
     }
@@ -226,7 +255,7 @@ export async function POST(req: Request) {
   let memoryBlock: string | null = null;
   if (profileForPrefs?.memoryUseInContext && userText) {
     try {
-      const mems = await searchMemories(profileId, userText);
+      const mems = await searchMemories(profileId, userText, undefined, { spaceId: conv.spaceId ?? null });
       memoryBlock = formatMemoriesForPrompt(mems) || null;
     } catch (err) {
       console.error("[chat] memory retrieval failed", err);
@@ -251,9 +280,18 @@ export async function POST(req: Request) {
 
   const browserSidecarEnabled =
     process.env.OPENMLC_BROWSER_ENABLED === "true" && browserMode;
+  // [spaces] Prepend the space's system prompt (if any) to the conversation
+  // prompt so its operator-supplied directives apply to every chat in this space.
+  const effectiveConvPrompt = (() => {
+    if (conv.spaceId && conv.space?.systemPrompt) {
+      const spaceBlock = `[space:${conv.space.name}]\n${conv.space.systemPrompt}`;
+      return conv.systemPrompt ? `${spaceBlock}\n\n${conv.systemPrompt}` : spaceBlock;
+    }
+    return conv.systemPrompt;
+  })();
   const systemBase = composeSystemPrompt({
-    conversationPrompt: conv.systemPrompt,
-    personaPrompt: conv.persona?.systemPrompt ?? null,
+    conversationPrompt: effectiveConvPrompt,
+    personaPrompt: effectivePersonaPrompt,
     memoryBlock,
     researchPrompt: researchMode ? RESEARCH_PROMPT : null,
     browserEnabled: browserSidecarEnabled,
@@ -386,6 +424,33 @@ export async function POST(req: Request) {
               messageId: assistantMsg.id,
             },
           }).catch((err) => console.error("[chat] research session finish failed", err));
+
+          // inbox: record research completion
+          try {
+            const finalized = await db.researchSession.findUnique({
+              where: { id: researchSessionId },
+              select: { query: true, sources: true },
+            });
+            let sourceCount = 0;
+            try {
+              const arr = JSON.parse(finalized?.sources ?? "[]");
+              if (Array.isArray(arr)) sourceCount = arr.length;
+            } catch { /* sources malformed — fall back to 0 */ }
+            const queryText = (finalized?.query ?? userText ?? "research").trim();
+            const titleText = queryText.length > 100 ? queryText.slice(0, 99) + "…" : queryText;
+            await recordInboxEntry({
+              profileId,
+              kind: "research_done",
+              title: titleText || "research",
+              summary: sourceCount > 0
+                ? `${sourceCount} source${sourceCount === 1 ? "" : "s"}`
+                : "research complete",
+              refType: "research_session",
+              refId: researchSessionId,
+            });
+          } catch (err) {
+            console.error("[chat] inbox entry (research) failed", err);
+          }
         }
       } catch (err) {
         console.error("[chat] persist failed", err);

@@ -61,8 +61,8 @@ export function SwarmConfigForm({ initial }: { initial: SwarmConfigInitial }) {
     setBusy(true);
     setErr(null);
     try {
-      const lo = clamp(Math.round(minAgents) || 1, 1, 10);
-      const hi = clamp(Math.round(maxAgents) || lo, lo, 10);
+      const lo = clamp(Math.round(minAgents) || 1, 1, 100);
+      const hi = clamp(Math.round(maxAgents) || lo, lo, 100);
       const res = await fetch("/api/swarm-config", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
@@ -93,7 +93,7 @@ export function SwarmConfigForm({ initial }: { initial: SwarmConfigInitial }) {
       <section className="swarm-config-row">
         <div className="swarm-config-label">
           <HudLabel>agent count</HudLabel>
-          <p>min and max number of agents the supervisor may spawn (1–10).</p>
+          <p>min and max number of agents the supervisor may spawn (1–100). all agents run in parallel.</p>
         </div>
         <div className="swarm-config-control swarm-config-numbers">
           <label className="swarm-config-number">
@@ -101,7 +101,7 @@ export function SwarmConfigForm({ initial }: { initial: SwarmConfigInitial }) {
             <input
               type="number"
               min={1}
-              max={10}
+              max={100}
               value={minAgents}
               onChange={(e) => setMinAgents(Number(e.target.value))}
             />
@@ -111,13 +111,33 @@ export function SwarmConfigForm({ initial }: { initial: SwarmConfigInitial }) {
             <input
               type="number"
               min={1}
-              max={10}
+              max={100}
               value={maxAgents}
               onChange={(e) => setMaxAgents(Number(e.target.value))}
             />
           </label>
         </div>
       </section>
+      {maxAgents >= 12 && (
+        <p
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontStyle: "italic",
+            fontSize: 12,
+            color: maxAgents >= 30 ? "var(--signal-err)" : "var(--fg-3)",
+            margin: "-8px 0 16px",
+            paddingLeft: 2,
+            borderLeft: maxAgents >= 30 ? "2px solid var(--signal-err)" : "2px solid var(--stroke-2)",
+            paddingTop: 4,
+            paddingBottom: 4,
+            paddingRight: 8,
+          }}
+        >
+          {maxAgents >= 30
+            ? `heads up — at ${maxAgents} agents per run, a single swarm can burn through real money. each agent is one full LLM call, plus the synthesizer at the end. with mid-tier models that's roughly $${(maxAgents * 0.05).toFixed(2)}–$${(maxAgents * 0.25).toFixed(2)} per run. provider rate limits will also start kicking in. you've been warned.`
+            : `note — ${maxAgents} agents means ${maxAgents} parallel LLM calls per run plus a synthesis call. costs scale linearly. keep an eye on /settings/usage.`}
+        </p>
+      )}
 
       <section className="swarm-config-row">
         <div className="swarm-config-label">
