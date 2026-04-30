@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
+import { PageHeader } from "@/components/chrome/AppShell";
 import { LibraryGrid, type LibraryItem } from "@/components/library/LibraryGrid";
 import { LibraryTabs } from "@/components/library/LibraryTabs";
 import { LibraryFilters } from "@/components/library/LibraryFilters";
@@ -173,33 +174,16 @@ export default async function LibraryPage({ searchParams }: Props) {
           : `${brwCount} browser session${brwCount === 1 ? "" : "s"}`;
 
   return (
-    <div className="lib-page">
-      <header className="lib-header">
-        <div className="lib-header__row">
-          <span className="lib-header__kicker">archive</span>
-          <span className="lib-header__rule" aria-hidden />
-          <span className="lib-header__date" suppressHydrationWarning>
-            {new Date().toISOString().slice(0, 10)}
-          </span>
-        </div>
-        <h1 className="lib-header__title">Library</h1>
-        <p className="lib-header__sub">
-          <em>everything the assistant has made for you</em>
-        </p>
-        <div className="lib-header__meta">
-          <span>{artCount} figures</span>
-          <span className="lib-header__dot" aria-hidden>·</span>
-          <span>{resCount} research</span>
-          <span className="lib-header__dot" aria-hidden>·</span>
-          <span>{brwCount} browser sessions</span>
-        </div>
-      </header>
-
-      <div className="lib-controls">
+    <div>
+      <PageHeader
+        kicker="archive"
+        title="library"
+        subtitle={`${artCount} figures · ${resCount} research · ${brwCount} browser sessions`}
+      />
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 20 }}>
         <LibraryTabs />
         <LibraryFilters />
       </div>
-
       <LibraryGrid
         initialItems={trimmed}
         initialCursor={initialCursor}

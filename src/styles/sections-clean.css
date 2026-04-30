@@ -1,81 +1,56 @@
-/* sections-clean.css — calm-down overrides for /, /library, /spaces, /inbox.
-   Imported AFTER home/library/spaces/inbox so it wins. The chat surface is
-   intentionally untouched. */
+/* sections-clean.css — neutralizes bespoke wrappers from the v3 sections so
+   they fit into AppShell's chrome. The bodies (cards, rows, grids) keep
+   their styling; the wrappers/heroes/eyebrows are zeroed out. */
 
-/* ── kill the italic display flourish on top-level headings ─────────── */
-.home-page h1,
-.home-header__date,
-.home-header__welcome,
-.lib-page h1,
-.lib-header__sub,
-.spc-page h1,
-.spc-header__sub,
-.spc-space-header h1,
-.ibx-page h1,
-.ibx-header__sub {
-  font-style: normal !important;
-  font-family: var(--font-sans) !important;
-  letter-spacing: -0.015em;
+/* Flatten all the bespoke shells/heroes — AppShell now provides the
+   page chrome. */
+.home-shell,
+.home-scroll,
+.home-page,
+.lib-page,
+.spc-shell,
+.spc-page,
+.ibx-shell,
+.ibx-main,
+.ibx-page {
+  display: block !important;
+  height: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+  border: 0 !important;
 }
 
-.home-page h1,
-.lib-page h1,
-.spc-page h1,
-.ibx-page h1 {
-  font-size: 22px !important;
-  font-weight: 600 !important;
-  line-height: 1.2 !important;
-  margin: 0 0 4px !important;
-  color: var(--fg-1);
+/* Remove every "kicker / eyebrow / dot / rule" decorative element on the
+   section pages. AppShell's PageHeader renders the canonical title. */
+.lib-header,
+.spc-header,
+.ibx-hero,
+.home-header {
+  display: none !important;
 }
 
-.home-header__date {
-  font-size: 22px !important;
-  font-weight: 600 !important;
-  letter-spacing: -0.015em;
-  color: var(--fg-1);
-}
-.home-header__welcome,
-.lib-header__sub,
-.spc-header__sub,
-.ibx-header__sub {
-  font-size: 13px !important;
-  color: var(--fg-3) !important;
-  font-weight: 400 !important;
-  font-style: normal !important;
-}
-
-/* ── normalize section labels: drop italic, drop forced caps ────────── */
+/* Section labels: simple uppercase mono caps, no italic, no rules. */
 .home-label,
 .spc-section-label,
 .lib-section-label,
 .ibx-day-label {
-  font-family: var(--font-sans) !important;
+  font-family: var(--font-mono) !important;
   font-style: normal !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.04em !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.18em !important;
   text-transform: uppercase !important;
-  color: var(--fg-4) !important;
+  color: var(--fg-3) !important;
   border: 0 !important;
   padding: 0 !important;
+  margin: 0 0 8px !important;
+  display: block;
 }
 
-/* ── hide the over-the-top "Fig. N" prefix in section pages ─────────── */
-/* Only for the home/library section tiles. The chat-internal artifact
-   "Fig." caption (`.artifact-fig__num`) is intentionally preserved. */
-.home-tile__num,
-.lib-card__num,
-.lib-fig__num,
-.lib-tile__num {
-  display: none !important;
-}
-.home-tile__rule,
-.lib-card__rule {
-  display: none !important;
-}
-
-/* ── cards: less hairline-everywhere, gentler radius ────────────────── */
+/* Cards: simple bordered rectangles like settings panels. */
 .home-tile,
 .lib-card,
 .spc-card,
@@ -85,6 +60,8 @@
   background: var(--surface-1);
   padding: 14px 16px !important;
   transition: border-color var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out);
+  text-decoration: none;
+  color: inherit;
 }
 .home-tile:hover,
 .lib-card:hover,
@@ -94,7 +71,17 @@
   background: var(--surface-hover);
 }
 
-/* ── grids: simple, predictable ─────────────────────────────────────── */
+/* Hide the editorial "Fig. N" number prefix on tile cards (NOT chat). */
+.home-tile__num,
+.home-tile__rule,
+.lib-card__num,
+.lib-card__rule,
+.lib-fig__num,
+.lib-tile__num {
+  display: none !important;
+}
+
+/* Predictable grid for tiles. */
 .home-tiles,
 .lib-grid,
 .spc-grid {
@@ -103,14 +90,12 @@
   gap: 12px !important;
 }
 
-/* ── inbox rows: clean rows, no all-caps, no italic ─────────────────── */
+/* Inbox rows — simple grid, no italic. */
 .ibx-row {
   display: grid !important;
   grid-template-columns: 16px 1fr auto !important;
   align-items: center !important;
   gap: 12px !important;
-  text-decoration: none;
-  color: inherit;
 }
 .ibx-row__title {
   font-family: var(--font-sans) !important;
@@ -128,47 +113,7 @@
   color: var(--fg-3) !important;
 }
 
-/* ── home: collapse oversized vertical rhythm ───────────────────────── */
-.home-page {
-  max-width: 760px !important;
-  margin: 0 auto !important;
-  padding: 28px 24px 64px !important;
-}
-.home-section {
-  margin: 0 !important;
-  padding: 20px 0 !important;
-  border-bottom: 1px solid var(--stroke-1);
-}
-.home-section:last-child { border-bottom: 0; }
-.home-section + .home-section { margin-top: 0 !important; }
-.home-header {
-  display: flex !important;
-  align-items: baseline !important;
-  justify-content: space-between !important;
-  gap: 16px !important;
-  flex-wrap: wrap !important;
-  padding-bottom: 8px !important;
-  border-bottom: 1px solid var(--stroke-1);
-  margin-bottom: 20px !important;
-}
-
-/* ── library / spaces / inbox: plain page wrap matching home ────────── */
-.lib-page,
-.spc-page,
-.ibx-page {
-  max-width: 960px !important;
-  margin: 0 auto !important;
-  padding: 28px 24px 64px !important;
-}
-.lib-header,
-.spc-header,
-.ibx-header {
-  padding-bottom: 12px !important;
-  border-bottom: 1px solid var(--stroke-1);
-  margin-bottom: 20px !important;
-}
-
-/* ── tone down the "type" mono caps everywhere ──────────────────────── */
+/* Type tag — small mono caps, calm. */
 .home-tile__type,
 .lib-card__type,
 .lib-fig__type,
@@ -181,7 +126,7 @@
   font-style: normal !important;
 }
 
-/* ── drop bonus hairlines and italic on stray secondary text ────────── */
+/* Empty states: not italic. */
 .home-empty,
 .lib-empty,
 .spc-empty,
@@ -192,7 +137,20 @@
   padding: 24px 0 !important;
 }
 
-/* ── space dashboard: simpler header ────────────────────────────────── */
+/* Section blocks: a little vertical breathing, hairline rule below. */
+.home-section,
+.lib-section,
+.spc-section {
+  display: block !important;
+  margin: 0 !important;
+  padding: 20px 0 !important;
+  border-bottom: 1px solid var(--stroke-1);
+}
+.home-section:last-child,
+.lib-section:last-child,
+.spc-section:last-child { border-bottom: 0; }
+
+/* Space dashboard: simple horizontal header. */
 .spc-space-header {
   display: flex !important;
   align-items: center !important;
@@ -201,7 +159,20 @@
   border-bottom: 1px solid var(--stroke-1);
   margin-bottom: 24px !important;
 }
+.spc-space-header h1 {
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  font-style: normal !important;
+  letter-spacing: -0.015em !important;
+  margin: 0 !important;
+  color: var(--fg-1);
+}
 .spc-space-header__emoji {
   font-size: 28px !important;
   line-height: 1 !important;
+}
+.spc-space-header__sub,
+.spc-space-header__desc {
+  font-style: normal !important;
+  color: var(--fg-3) !important;
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
+import { PageHeader } from "@/components/chrome/AppShell";
 import { SpacesGrid, type SpaceCard } from "@/components/spaces/SpacesGrid";
 
 export const dynamic = "force-dynamic";
@@ -29,8 +30,13 @@ export default async function SpacesIndexPage() {
   }));
 
   return (
-    <main className="spc-shell">
+    <div>
+      <PageHeader
+        kicker="workspaces"
+        title="spaces"
+        subtitle="group conversations, knowledge, and memory by project"
+      />
       <SpacesGrid initialSpaces={initialSpaces} />
-    </main>
+    </div>
   );
 }

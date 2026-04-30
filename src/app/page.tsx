@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
-import { TopRail } from "@/components/chat/TopRail";
+import { AppShell, PageHeader } from "@/components/chrome/AppShell";
 import { HomeHeader, buildDateLabel } from "@/components/home/HomeHeader";
 import { RecentLibrary, type RecentItem } from "@/components/home/RecentLibrary";
 import { TopSpaces, type TopSpaceRow } from "@/components/home/TopSpaces";
@@ -222,53 +222,57 @@ export default async function Home() {
   const dateLabel = buildDateLabel(now);
 
   return (
-    <div className="home-shell">
-      <TopRail />
-      <div className="home-scroll">
-        <main className="home-page">
-          <HomeHeader
-            displayName={profile.displayName}
-            todaySpend={todaySpend}
-            weekSpend={weekSpend}
-            spark={spark}
-            dateLabel={dateLabel}
-          />
+    <AppShell>
+      <PageHeader
+        kicker={`home · ${dateLabel.toLowerCase()}`}
+        title={`welcome back, ${profile.displayName.toLowerCase()}`}
+        subtitle={`$${todaySpend.toFixed(2)} today · $${weekSpend.toFixed(2)} this week`}
+        right={
+          <Link
+            href="/chat"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              color: "var(--fg-3)",
+              textDecoration: "none",
+            }}
+          >
+            skip → chat
+          </Link>
+        }
+      />
 
-          {/* B — continue / start chat */}
-          <section className="home-section home-continue">
-            {lastConv ? (
-              <Link href={`/chat/${lastConv.id}`} className="home-continue__sentence">
-                Pick up where you left off —{" "}
-                <em>{truncateTitle(lastConv.title || "untitled conversation")}</em>
-              </Link>
-            ) : (
-              <span className="home-continue__sentence">
-                Begin a new line of thought.
-              </span>
-            )}
-            <div className="home-continue__row">
-              <Link href="/chat" className="home-link-mono">
-                {lastConv ? "or start a new chat →" : "Start a new chat →"}
-              </Link>
-              <Link href="/chat" className="home-skip" aria-label="Skip the dashboard and go straight to chat">
-                skip → chat
-              </Link>
-            </div>
-          </section>
+      <HomeHeader
+        displayName={profile.displayName}
+        todaySpend={todaySpend}
+        weekSpend={weekSpend}
+        spark={spark}
+        dateLabel={dateLabel}
+      />
 
-          {/* C — recent library */}
-          <RecentLibrary items={recent} />
+      <section style={{ marginTop: 24, paddingBottom: 20, borderBottom: "1px solid var(--stroke-1)" }}>
+        {lastConv ? (
+          <Link
+            href={`/chat/${lastConv.id}`}
+            style={{ color: "var(--fg-1)", textDecoration: "none", fontSize: 15 }}
+          >
+            pick up where you left off — <span style={{ color: "var(--fg-accent)" }}>{truncateTitle(lastConv.title || "untitled conversation")}</span>
+          </Link>
+        ) : (
+          <span style={{ color: "var(--fg-2)", fontSize: 15 }}>begin a new line of thought.</span>
+        )}
+        <div style={{ marginTop: 6 }}>
+          <Link href="/chat" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)", textDecoration: "none" }}>
+            {lastConv ? "or start a new chat →" : "start a new chat →"}
+          </Link>
+        </div>
+      </section>
 
-          {/* D — top spaces */}
-          <TopSpaces spaces={topSpaces} />
-
-          {/* E — upcoming runs */}
-          <UpcomingRuns rows={upcoming} />
-
-          {/* F — inbox preview (omitted entirely if empty) */}
-          <InboxPreview rows={inbox} />
-        </main>
-      </div>
-    </div>
+      <RecentLibrary items={recent} />
+      <TopSpaces spaces={topSpaces} />
+      <UpcomingRuns rows={upcoming} />
+      <InboxPreview rows={inbox} />
+    </AppShell>
   );
 }
