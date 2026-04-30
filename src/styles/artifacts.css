@@ -222,49 +222,114 @@
   color: var(--fg-3, #888);
 }
 
-.artifact-inline {
-  display: inline-flex;
+/* Editorial figure cards — replaces the old "artifact-inline" panel.
+   Visual model: a figure caption from a printed paper.
+   No background fill, no thick accent border, no emoji.
+   The whole row is the click target; an arrow appears on hover. */
+
+.artifact-fig-stack {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+  border-top: 1px solid var(--stroke-1);
+}
+
+.artifact-fig {
+  --fig-pad-y: 10px;
+  display: grid;
+  grid-template-columns: auto 18px auto 1fr auto auto;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  margin: 4px 0;
-  background: var(--bg-elevated, #1a1a1a);
-  border: 1px solid var(--stroke-1, rgba(255,255,255,0.08));
-  border-left: 3px solid var(--fg-accent, #4ade80);
-  border-radius: 4px;
+  gap: 10px;
+  width: 100%;
+  padding: var(--fig-pad-y) 0;
+  border: 0;
+  border-bottom: 1px solid var(--stroke-1);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--fg-2);
+  font-family: var(--font-sans);
+  transition: color var(--dur-2) var(--ease-out);
+}
+
+.artifact-fig:hover { color: var(--fg-1); }
+.artifact-fig:focus-visible { outline: 0; }
+.artifact-fig:focus-visible .artifact-fig__title { color: var(--fg-accent); }
+
+.artifact-fig__num {
+  font-family: var(--font-sans);
+  font-style: italic;
+  font-weight: 400;
   font-size: 12px;
-  font-family: var(--font-mono, ui-monospace, monospace);
-  color: var(--fg-2, #bbb);
-  cursor: default;
-}
-
-.artifact-inline__icon {
-  font-size: 14px;
-}
-
-.artifact-inline__label {
-  flex: 1;
+  color: var(--fg-4);
+  letter-spacing: 0;
   white-space: nowrap;
+  font-feature-settings: "lnum", "tnum";
+}
+
+.artifact-fig__rule {
+  height: 1px;
+  background: var(--stroke-2);
+  align-self: center;
+  width: 100%;
+  transition: background var(--dur-2) var(--ease-out);
+}
+.artifact-fig:hover .artifact-fig__rule { background: var(--fg-3); }
+
+.artifact-fig__glyph {
+  color: var(--fg-3);
+  display: inline-flex;
+  transition: color var(--dur-2) var(--ease-out);
+}
+.artifact-fig:hover .artifact-fig__glyph { color: var(--fg-accent); }
+
+.artifact-fig__title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--fg-1);
+  letter-spacing: -0.005em;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
-.artifact-inline__type {
-  color: var(--fg-3, #888);
-  font-size: 11px;
+.artifact-fig__type {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-4);
+  white-space: nowrap;
+  font-feature-settings: "ss01";
+}
+.artifact-fig__lang { color: var(--fg-3); }
+
+.artifact-fig__arrow {
+  color: var(--fg-4);
+  display: inline-flex;
+  opacity: 0;
+  transform: translate(-2px, 2px);
+  transition: opacity var(--dur-2) var(--ease-out),
+              transform var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out);
+}
+.artifact-fig:hover .artifact-fig__arrow,
+.artifact-fig:focus-visible .artifact-fig__arrow {
+  opacity: 1;
+  transform: translate(0, 0);
+  color: var(--fg-accent);
 }
 
-.artifact-inline__open {
-  padding: 2px 6px;
-  font-size: 11px;
-  background: transparent;
-  border: 1px solid var(--stroke-1, rgba(255,255,255,0.08));
-  border-radius: 2px;
-  color: var(--fg-accent, #4ade80);
-  cursor: pointer;
-  transition: background 120ms;
-}
-
-.artifact-inline__open:hover {
-  background: rgba(74, 222, 128, 0.1);
+@media (max-width: 640px) {
+  .artifact-fig {
+    grid-template-columns: auto 1fr auto;
+    gap: 8px;
+    column-gap: 10px;
+    row-gap: 2px;
+    padding: 12px 0;
+  }
+  .artifact-fig__rule { display: none; }
+  .artifact-fig__type { grid-column: 1 / -1; padding-left: 2px; }
+  .artifact-fig__arrow { opacity: 1; transform: none; }
 }

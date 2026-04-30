@@ -341,7 +341,7 @@ function TimelineNode({
         className={`tl-row${hasBody ? " clickable" : ""}`}
         onClick={() => hasBody && setOpen((v) => !v)}
       >
-        <span className={`tl-dot ${status}`} />
+        <span className={`tl-stem ${status}`} aria-hidden />
         {isMcp && <span className="tl-mcp">mcp</span>}
         <span className="tl-label">{label}</span>
         {hint && <span className="tl-hint">{hint}</span>}
@@ -425,10 +425,7 @@ function ToolNode({ part, streaming }: { part: ToolPart; streaming?: boolean }) 
     );
   }
 
-  const isCodeExecDone = rawName === "code_exec" && isDone && !isError;
-  const wrappedBody = isCodeExecDone
-    ? <div style={{ border: "1px solid var(--stroke-1)", borderRadius: "var(--r-2)", overflow: "hidden" }}>{body}</div>
-    : body;
+  const wrappedBody = body;
 
   return (
     <TimelineNode
@@ -674,11 +671,12 @@ export function MessageBubble({
                 )}
 
                 {!isUser && renderArtifacts.length > 0 && onOpenArtifact && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
-                    {renderArtifacts.map((a) => (
+                  <div className="artifact-fig-stack">
+                    {renderArtifacts.map((a, i) => (
                       <ArtifactInline
                         key={a.id}
                         artifact={a}
+                        index={i}
                         onOpen={() => onOpenArtifact(a)}
                       />
                     ))}
