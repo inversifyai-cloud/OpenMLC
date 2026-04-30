@@ -14,7 +14,19 @@ export interface ArtifactData {
   conversationId: string;
 }
 
+function sanitizeArtifactContent(raw: string): string {
+  let s = raw.trim();
+  const fenceWrap = /^```[a-zA-Z0-9_+-]*\s*\n([\s\S]*?)\n?```\s*$/;
+  const m = fenceWrap.exec(s);
+  if (m) s = m[1].trim();
+  s = s.replace(/^```[a-zA-Z0-9_+-]*\s*\n?/, "");
+  s = s.replace(/\n?```\s*$/, "");
+  return s.trim();
+}
+
 function wrapReactComponent(code: string, title: string): string {
+  const clean = sanitizeArtifactContent(code);
+  const stripped = clean.replace(/^\s*import[^;]*;\s*/gm, "");
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,7 +42,7 @@ function wrapReactComponent(code: string, title: string): string {
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="env,react">
-${code}
+${stripped}
 const __mountRoot = document.getElementById("root");
 ReactDOM.createRoot(__mountRoot).render(React.createElement(App));
 </script>
@@ -154,7 +166,7 @@ export function ArtifactsPane({ artifact, onClose, versions = [] }: ArtifactsPan
             {artifact.type === "html" && (
               <iframe
                 sandbox="allow-scripts allow-popups allow-modals allow-forms"
-                srcDoc={artifact.content}
+                srcDoc={sanitizeArtifactContent(artifact.content)}
                 title={artifact.title}
               />
             )}
