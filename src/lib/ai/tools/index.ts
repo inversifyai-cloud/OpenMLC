@@ -11,6 +11,7 @@ import { urlReadDefinition } from "./url-read";
 import { kbSearchDefinition } from "./kb-search";
 import { codeExecDefinition } from "./code-exec";
 import { imageGenDefinition } from "./image-gen";
+import { rememberDefinition } from "./remember";
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   webSearchDefinition,
@@ -18,6 +19,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   kbSearchDefinition,
   codeExecDefinition,
   imageGenDefinition,
+  rememberDefinition,
 ];
 
 export function buildToolsForRequest(params: {
@@ -70,6 +72,11 @@ export function toolsSystemPromptHint(names: ToolName[]): string {
   if (names.includes("image_gen")) {
     parts.push(
       "- image_gen: generate an image when the user explicitly asks to create, draw, generate, or illustrate one. provide a detailed descriptive prompt. call at most once per turn."
+    );
+  }
+  if (names.includes("remember")) {
+    parts.push(
+      "- remember: save a durable fact about the user (preferences, role, tech stack, ongoing projects, important context) so it persists across conversations. call this whenever the user shares something worth knowing in future chats - their name, preferred languages, what they're building, etc. phrase the fact concisely in third person starting with 'User'. do NOT save in-the-moment requests, transient state, or speculation. do NOT mention saving the memory in your reply unless the user explicitly asks you to remember something."
     );
   }
   parts.push("]");

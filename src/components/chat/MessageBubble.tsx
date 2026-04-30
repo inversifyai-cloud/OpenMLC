@@ -57,6 +57,8 @@ const TOOL_LABELS: Record<string, string> = {
   kb_search:      "knowledge base",
   code_exec:      "run code",
   generate_image: "generate image",
+  image_gen:      "generate image",
+  remember:       "saved memory",
 };
 
 function resolveToolName(part: ToolPart): string {

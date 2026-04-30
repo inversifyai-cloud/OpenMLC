@@ -8,7 +8,8 @@ export type ToolName =
   | "kb_search"
   | "code_exec"
   | "generate_image"
-  | "image_gen";
+  | "image_gen"
+  | "remember";
 
 export interface ToolContext {
   profileId: string;
