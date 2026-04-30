@@ -61,7 +61,12 @@ try {
 
 function Get-RandomHex([int]$bytes) {
     $buf = New-Object byte[] $bytes
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($buf)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $rng.GetBytes($buf)
+    } finally {
+        if ($rng -is [System.IDisposable]) { $rng.Dispose() }
+    }
     -join ($buf | ForEach-Object { $_.ToString("x2") })
 }
 
