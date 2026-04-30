@@ -1,0 +1,207 @@
+/* sections-clean.css — calm-down overrides for /, /library, /spaces, /inbox.
+   Imported AFTER home/library/spaces/inbox so it wins. The chat surface is
+   intentionally untouched. */
+
+/* ── kill the italic display flourish on top-level headings ─────────── */
+.home-page h1,
+.home-header__date,
+.home-header__welcome,
+.lib-page h1,
+.lib-header__sub,
+.spc-page h1,
+.spc-header__sub,
+.spc-space-header h1,
+.ibx-page h1,
+.ibx-header__sub {
+  font-style: normal !important;
+  font-family: var(--font-sans) !important;
+  letter-spacing: -0.015em;
+}
+
+.home-page h1,
+.lib-page h1,
+.spc-page h1,
+.ibx-page h1 {
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  margin: 0 0 4px !important;
+  color: var(--fg-1);
+}
+
+.home-header__date {
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em;
+  color: var(--fg-1);
+}
+.home-header__welcome,
+.lib-header__sub,
+.spc-header__sub,
+.ibx-header__sub {
+  font-size: 13px !important;
+  color: var(--fg-3) !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+}
+
+/* ── normalize section labels: drop italic, drop forced caps ────────── */
+.home-label,
+.spc-section-label,
+.lib-section-label,
+.ibx-day-label {
+  font-family: var(--font-sans) !important;
+  font-style: normal !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  color: var(--fg-4) !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+/* ── hide the over-the-top "Fig. N" prefix in section pages ─────────── */
+/* Only for the home/library section tiles. The chat-internal artifact
+   "Fig." caption (`.artifact-fig__num`) is intentionally preserved. */
+.home-tile__num,
+.lib-card__num,
+.lib-fig__num,
+.lib-tile__num {
+  display: none !important;
+}
+.home-tile__rule,
+.lib-card__rule {
+  display: none !important;
+}
+
+/* ── cards: less hairline-everywhere, gentler radius ────────────────── */
+.home-tile,
+.lib-card,
+.spc-card,
+.ibx-row {
+  border: 1px solid var(--stroke-1) !important;
+  border-radius: var(--r-3) !important;
+  background: var(--surface-1);
+  padding: 14px 16px !important;
+  transition: border-color var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out);
+}
+.home-tile:hover,
+.lib-card:hover,
+.spc-card:hover,
+.ibx-row:hover {
+  border-color: var(--stroke-2) !important;
+  background: var(--surface-hover);
+}
+
+/* ── grids: simple, predictable ─────────────────────────────────────── */
+.home-tiles,
+.lib-grid,
+.spc-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  gap: 12px !important;
+}
+
+/* ── inbox rows: clean rows, no all-caps, no italic ─────────────────── */
+.ibx-row {
+  display: grid !important;
+  grid-template-columns: 16px 1fr auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  text-decoration: none;
+  color: inherit;
+}
+.ibx-row__title {
+  font-family: var(--font-sans) !important;
+  font-style: normal !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: var(--fg-1) !important;
+  letter-spacing: -0.005em !important;
+}
+.ibx-row__summary,
+.ibx-row__time {
+  font-family: var(--font-sans) !important;
+  font-style: normal !important;
+  font-size: 12px !important;
+  color: var(--fg-3) !important;
+}
+
+/* ── home: collapse oversized vertical rhythm ───────────────────────── */
+.home-page {
+  max-width: 760px !important;
+  margin: 0 auto !important;
+  padding: 28px 24px 64px !important;
+}
+.home-section {
+  margin: 0 !important;
+  padding: 20px 0 !important;
+  border-bottom: 1px solid var(--stroke-1);
+}
+.home-section:last-child { border-bottom: 0; }
+.home-section + .home-section { margin-top: 0 !important; }
+.home-header {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid var(--stroke-1);
+  margin-bottom: 20px !important;
+}
+
+/* ── library / spaces / inbox: plain page wrap matching home ────────── */
+.lib-page,
+.spc-page,
+.ibx-page {
+  max-width: 960px !important;
+  margin: 0 auto !important;
+  padding: 28px 24px 64px !important;
+}
+.lib-header,
+.spc-header,
+.ibx-header {
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid var(--stroke-1);
+  margin-bottom: 20px !important;
+}
+
+/* ── tone down the "type" mono caps everywhere ──────────────────────── */
+.home-tile__type,
+.lib-card__type,
+.lib-fig__type,
+.spc-card__type {
+  font-family: var(--font-mono) !important;
+  font-size: 9.5px !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: var(--fg-4) !important;
+  font-style: normal !important;
+}
+
+/* ── drop bonus hairlines and italic on stray secondary text ────────── */
+.home-empty,
+.lib-empty,
+.spc-empty,
+.ibx-empty {
+  font-style: normal !important;
+  color: var(--fg-3) !important;
+  font-size: 13px !important;
+  padding: 24px 0 !important;
+}
+
+/* ── space dashboard: simpler header ────────────────────────────────── */
+.spc-space-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid var(--stroke-1);
+  margin-bottom: 24px !important;
+}
+.spc-space-header__emoji {
+  font-size: 28px !important;
+  line-height: 1 !important;
+}

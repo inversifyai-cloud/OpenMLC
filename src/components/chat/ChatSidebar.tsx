@@ -265,26 +265,6 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
       )}
 
       <aside className="sidebar">
-        {/* shell-nav */}
-        <nav className="shell-nav" aria-label="primary">
-          <Link href="/" className="shell-nav__item" prefetch={false}>
-            <span className="shell-nav__glyph" aria-hidden>·</span>
-            <span className="shell-nav__label">Home</span>
-          </Link>
-          <Link href="/library" className="shell-nav__item" prefetch={false}>
-            <span className="shell-nav__glyph" aria-hidden>·</span>
-            <span className="shell-nav__label">Library</span>
-          </Link>
-          <Link href="/inbox" className="shell-nav__item" prefetch={false}>
-            <span className="shell-nav__glyph" aria-hidden>·</span>
-            <span className="shell-nav__label">Inbox</span>
-          </Link>
-          <Link href="/spaces" className="shell-nav__item" prefetch={false}>
-            <span className="shell-nav__glyph" aria-hidden>·</span>
-            <span className="shell-nav__label">Spaces</span>
-          </Link>
-        </nav>
-
         <div className="side-head">
           <span className="side-title"><b>conversations</b></span>
           <span className="side-title">{conversations.length}</span>

@@ -6,9 +6,22 @@ import { ThemeToggle } from "@/components/chrome/ThemeToggle";
 import { HamburgerButton } from "@/components/chat/ChatShell";
 import { InboxBadge } from "@/components/inbox/InboxBadge";
 
+const NAV_LINKS: Array<{ href: string; label: string }> = [
+  { href: "/", label: "home" },
+  { href: "/chat", label: "chat" },
+  { href: "/spaces", label: "spaces" },
+  { href: "/library", label: "library" },
+  { href: "/inbox", label: "inbox" },
+];
+
 export function TopRail() {
   const pathname = usePathname();
   const inSettings = pathname?.startsWith("/settings");
+  function isActive(href: string): boolean {
+    if (!pathname) return false;
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(href + "/");
+  }
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -16,9 +29,20 @@ export function TopRail() {
         <div className="brand">
           <span className="brand-name">openmlc</span>
         </div>
+        <nav className="topbar-nav" aria-label="primary">
+          {NAV_LINKS.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`topbar-nav__link${isActive(l.href) ? " is-active" : ""}`}
+              prefetch={false}
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
       </div>
       <div className="topbar-right">
-        {/* shell-nav: inbox badge */}
         <InboxBadge />
         <ThemeToggle className="ico-btn" />
         <Link

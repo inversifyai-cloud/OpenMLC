@@ -27,6 +27,33 @@
 }
 .topbar-left, .topbar-right { display: flex; align-items: center; gap: 8px; flex: 1; }
 .topbar-right { justify-content: flex-end; }
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 14px;
+  height: 100%;
+}
+.topbar-nav__link {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg-3);
+  text-decoration: none;
+  border-radius: var(--r-2);
+  letter-spacing: -0.005em;
+  transition: color var(--dur-1), background var(--dur-1);
+}
+.topbar-nav__link:hover { color: var(--fg-1); background: var(--surface-hover); }
+.topbar-nav__link.is-active { color: var(--fg-1); background: var(--surface-press); }
+@media (max-width: 720px) {
+  .topbar-nav { display: none; }
+}
 .brand { display: flex; align-items: center; gap: 8px; }
 .brand::before {
   content: "";
