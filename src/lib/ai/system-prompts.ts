@@ -4,22 +4,49 @@ export const ARTIFACTS_PROMPT = `
 
 ## Renderable artifacts
 
-When the user asks for something visual, interactive, or substantial that's better seen than read - HTML pages, UI mockups, SVG diagrams, React components, single-file apps, long code files (>30 lines), or formatted documents - wrap it in an artifact tag so the user gets a live preview pane:
+When the user asks for something visual, interactive, or substantial that's better seen than read (HTML pages, UI mockups, SVG diagrams, React components, single-file apps, long code files, formatted docs), wrap it in an artifact tag so they get a live preview pane.
 
-<artifact title="brief title" type="TYPE" language="LANG">
-...content...
-</artifact>
+CRITICAL FORMAT RULES - artifacts only render correctly when these are followed:
+
+1. The artifact opens with <artifact title="..." type="..." language="..."> and closes with </artifact>.
+2. Put RAW content directly inside the tag. DO NOT wrap the content in markdown code fences (no triple-backticks inside the artifact tag).
+3. DO NOT explain setup steps (npx create-react-app, npm install, etc.). Produce ONE self-contained artifact that runs as-is.
+4. After the closing </artifact> tag, do not paste the same code again as a fenced block.
 
 Valid types:
-- html: complete HTML document with inline CSS + JS. renders in a sandboxed iframe with scripts enabled.
-- react: a single self-contained React component named App. it gets wrapped automatically with React 18 from CDN, Tailwind CDN, and a root mount. write only the component code (function App() { ... } and any helpers). don't add ReactDOM.render calls.
-- svg: a complete <svg>...</svg> element. renders inline.
-- markdown: long-form formatted prose.
-- code: any other source code. include language="js" / "py" / "rust" etc.
 
-When you use an artifact, do not also paste the same content as a fenced code block in your reply - the artifact is the preview. Add a one-line lead-in before the artifact ("Here's a working calendar widget:") and follow-up notes after if useful.
+- html: a complete <!DOCTYPE html>...<html>...</html> document with inline <style> and <script>. Renders in a sandboxed iframe (scripts allowed).
+- react: ONE React component named App, plus any helper functions. React 18, ReactDOM, Tailwind CSS, and Babel are auto-injected from CDN and a root mount is auto-attached. Write only the component code. NO import statements (React and ReactDOM are globals). NO ReactDOM.render calls. NO Next.js features (no <style jsx>, no next/link). Plain React + Tailwind classes for styling.
+- svg: a complete <svg xmlns="..." viewBox="...">...</svg>. Renders inline.
+- markdown: long formatted prose.
+- code: any other source code, with language="py"/"rust"/"go"/etc.
 
-For tiny snippets under ~10 lines, prefer fenced code blocks inline. Artifacts are for things worth previewing.`;
+EXAMPLE (correct format):
+
+Here's a working stopwatch:
+
+<artifact title="Stopwatch" type="react">
+function App() {
+  const [ms, setMs] = React.useState(0);
+  const [running, setRunning] = React.useState(false);
+  React.useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setMs(m => m + 10), 10);
+    return () => clearInterval(id);
+  }, [running]);
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-zinc-900 text-white">
+      <div className="text-6xl font-mono">{(ms / 1000).toFixed(2)}s</div>
+      <div className="flex gap-3">
+        <button onClick={() => setRunning(r => !r)} className="px-4 py-2 bg-emerald-500 rounded">{running ? "Pause" : "Start"}</button>
+        <button onClick={() => setMs(0)} className="px-4 py-2 bg-zinc-700 rounded">Reset</button>
+      </div>
+    </div>
+  );
+}
+</artifact>
+
+For tiny snippets under ~10 lines, prefer normal fenced code blocks inline. Artifacts are for things worth previewing.`;
 
 export function getCurrentDateContext(): string {
   const now = new Date();

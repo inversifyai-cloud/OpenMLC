@@ -14,6 +14,14 @@ function parseType(raw: string): ExtractedArtifact["type"] {
   return VALID_TYPES.has(t) ? (t as ExtractedArtifact["type"]) : "code";
 }
 
+function stripFenceWrap(content: string): string {
+  const trimmed = content.trim();
+  const fenceRe = /^```[a-zA-Z0-9_+-]*\s*\n([\s\S]*?)\n?```\s*$/;
+  const m = fenceRe.exec(trimmed);
+  if (m) return m[1].trim();
+  return trimmed;
+}
+
 export function extractArtifacts(messageText: string): ExtractedArtifact[] {
   const results: ExtractedArtifact[] = [];
 
@@ -35,7 +43,9 @@ export function extractArtifacts(messageText: string): ExtractedArtifact[] {
     const type = parseType(typeMatch?.[1] ?? "code");
     const language = langMatch?.[1] ?? (type === "code" ? "text" : undefined);
 
-    results.push({ type, language, title, content });
+    const cleanContent = stripFenceWrap(content);
+
+    results.push({ type, language, title, content: cleanContent });
     tagMatches.add(`${tagMatch.index}:${tagMatch[0].length}`);
   }
 
