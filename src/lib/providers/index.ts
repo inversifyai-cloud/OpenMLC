@@ -39,6 +39,12 @@ export function getProviderModel(
         apiKey,
         baseURL: baseUrl ?? "http://localhost:11434/v1",
       }).chat(providerModelId);
+    case "custom":
+      if (!baseUrl) throw new Error("Custom provider missing baseUrl");
+      return createOpenAI({
+        apiKey: apiKey || "no-key",
+        baseURL: baseUrl,
+      }).chat(providerModelId);
     default:
       throw new Error(`Unknown provider: ${providerId}`);
   }

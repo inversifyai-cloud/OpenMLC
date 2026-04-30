@@ -10,6 +10,7 @@ const ENV_VAR: Record<ProviderId, string> = {
   fireworks: "FIREWORKS_API_KEY",
   openrouter: "OPENROUTER_API_KEY",
   ollama: "",
+  custom: "",
 };
 
 export type ResolvedKey = {

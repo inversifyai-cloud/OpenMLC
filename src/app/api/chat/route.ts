@@ -92,7 +92,16 @@ export async function POST(req: Request) {
     select: { memoryUseInContext: true },
   });
 
-  const resolved = await resolveProviderKey(profileId, model.providerId);
+  let resolved: { key: string; baseUrl?: string; source: "byok" | "env" } | null = null;
+  if (model.providerId === "custom") {
+    const parsed = await import("@/lib/providers/custom").then((m) => m.parseCustomModelId(model.id));
+    if (parsed) {
+      const cp = await import("@/lib/providers/custom").then((m) => m.resolveCustomProvider(profileId, parsed.customProviderId));
+      if (cp) resolved = { key: cp.key, baseUrl: cp.baseUrl, source: "byok" };
+    }
+  } else {
+    resolved = await resolveProviderKey(profileId, model.providerId);
+  }
   if (!resolved) {
     return Response.json(
       {

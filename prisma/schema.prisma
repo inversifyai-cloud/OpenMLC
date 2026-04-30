@@ -48,6 +48,7 @@ model Profile {
   memories        Memory[]
   personas        Persona[]
   promptTemplates PromptTemplate[]
+  customProviders CustomProvider[]
 }
 
 model ProfileSession {
@@ -427,4 +428,20 @@ model PromptTemplate {
 
   @@index([profileId])
   @@index([profileId, shortcut])
+}
+
+model CustomProvider {
+  id           String   @id @default(cuid())
+  profileId    String
+  name         String
+  baseUrl      String
+  encryptedKey String?
+  models       String   @default("[]")
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
 }

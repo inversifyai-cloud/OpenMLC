@@ -5,7 +5,8 @@ export type ProviderId =
   | "xai"
   | "fireworks"
   | "openrouter"
-  | "ollama";
+  | "ollama"
+  | "custom";
 
 export type ModelCapability =
   | "text"

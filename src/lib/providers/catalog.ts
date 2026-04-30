@@ -2,6 +2,7 @@ import { models as STATIC_MODELS } from "./registry";
 import { getOpenRouterCatalog } from "./openrouter";
 import { fetchOllamaCatalog } from "./ollama";
 import { resolveProviderKey } from "./resolve-key";
+import { listCustomCatalogForProfile, findCustomModel } from "./custom";
 import type { Model } from "@/types/chat";
 
 export async function getCombinedCatalog(profileId?: string): Promise<Model[]> {
@@ -18,19 +19,25 @@ export async function getCombinedCatalog(profileId?: string): Promise<Model[]> {
   );
 
   let ollamaModels: Model[] = [];
+  let customModels: Model[] = [];
   if (profileId) {
     const resolved = await resolveProviderKey(profileId, "ollama");
     if (resolved?.baseUrl) {
       ollamaModels = await fetchOllamaCatalog(resolved.baseUrl);
     }
+    customModels = await listCustomCatalogForProfile(profileId);
   }
 
-  return [...STATIC_MODELS, ...ollamaModels, ...dynamicOr];
+  return [...STATIC_MODELS, ...ollamaModels, ...customModels, ...dynamicOr];
 }
 
 export async function findModel(id: string, profileId?: string): Promise<Model | null> {
   const fromStatic = STATIC_MODELS.find((m) => m.id === id);
   if (fromStatic) return fromStatic;
+
+  if (id.startsWith("cprov:")) {
+    return findCustomModel(id, profileId);
+  }
 
   if (id.startsWith("or:")) {
     const orModels = await getOpenRouterCatalog();
