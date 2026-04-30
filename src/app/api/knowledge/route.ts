@@ -7,18 +7,18 @@ import { triggerFileProcessing } from "@/lib/ai/knowledge-rag";
 
 const MAX_SIZE = 20 * 1024 * 1024;
 
-const ALLOWED_TYPES = new Set([
-  "text/plain",
-  "text/markdown",
-  "text/csv",
-  "application/pdf",
-  "application/json",
-  "text/javascript",
-  "text/x-python",
-  "text/x-typescript",
-  "text/x-go",
-  "text/x-rust",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+const ALLOWED_EXTS = new Set([
+  ".txt", ".md", ".markdown", ".csv", ".tsv", ".log",
+  ".pdf",
+  ".json", ".jsonl", ".yaml", ".yml", ".toml", ".xml", ".html", ".htm",
+  ".js", ".jsx", ".mjs", ".cjs",
+  ".ts", ".tsx",
+  ".py",
+  ".go",
+  ".rs",
+  ".java", ".kt", ".swift", ".c", ".h", ".cc", ".cpp", ".hpp",
+  ".rb", ".php", ".sh", ".bash", ".zsh",
+  ".sql", ".css", ".scss", ".env",
 ]);
 
 export async function GET() {
@@ -79,11 +79,14 @@ export async function POST(req: Request) {
   }
 
   const filename = (file as File).name ?? "upload";
-  const mimeType = file.type || "application/octet-stream";
+  const ext = (extname(filename) || "").toLowerCase();
+  const browserMime = file.type || "";
 
-  if (!ALLOWED_TYPES.has(mimeType)) {
-    return Response.json({ error: "unsupported file type" }, { status: 415 });
+  if (!ALLOWED_EXTS.has(ext)) {
+    return Response.json({ error: `unsupported file type (${ext || "no extension"})` }, { status: 415 });
   }
+
+  const mimeType = ext === ".pdf" ? "application/pdf" : (browserMime.startsWith("text/") ? browserMime : "text/plain");
 
   const created = await db.knowledgeFile.create({
     data: {
@@ -97,7 +100,6 @@ export async function POST(req: Request) {
     select: { id: true },
   });
 
-  const ext = extname(filename) || "";
   const storedName = `${created.id}${ext}`;
   const relPath = `uploads/${profileId}/kb/${storedName}`;
   const dir = join(process.cwd(), "uploads", profileId, "kb");

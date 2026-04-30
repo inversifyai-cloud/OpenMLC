@@ -24,7 +24,7 @@ export async function extractText(
       const data = await pdfParse(buf);
       return data.text?.slice(0, 50_000) ?? null;
     }
-    if (isText(mimeType)) {
+    if (isText(mimeType) || mimeType === "application/octet-stream" || mimeType.startsWith("application/")) {
       const content = await readFile(fullPath, "utf-8");
       return content.slice(0, 50_000);
     }
