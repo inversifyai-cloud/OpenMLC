@@ -599,10 +599,13 @@ export function MessageBubble({
                   textParts.length > 0 ? (
                     <>
                       {textParts.map((part, i) => {
-                        if (!part.text.trim()) return null;
+                        const partText = !isUser && renderArtifacts.length > 0
+                          ? stripArtifactTags(part.text)
+                          : part.text;
+                        if (!partText.trim()) return null;
                         return (
                           <div key={i} style={i > 0 ? { marginTop: 8 } : undefined}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD}>{part.text}</ReactMarkdown>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD}>{partText}</ReactMarkdown>
                           </div>
                         );
                       })}
