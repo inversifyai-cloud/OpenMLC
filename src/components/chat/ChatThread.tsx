@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
@@ -9,6 +9,7 @@ import { MessageBubble, type AnyPart } from "./MessageBubble";
 import { ChatComposer, type PendingAttachment, type ReasoningEffort } from "./ChatComposer";
 import { SystemPromptEditor } from "./SystemPromptEditor";
 import { SwarmInlineView } from "@/components/swarm/SwarmInlineView";
+import { ArtifactsPane, type ArtifactData } from "./ArtifactsPane";
 import { useSwarmStream } from "@/hooks/use-swarm-stream";
 import { getModel } from "@/lib/providers/registry";
 import type { ChatMessage } from "@/types/chat";
@@ -58,8 +59,36 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("off");
   const [swarmMode, setSwarmMode] = useState(false);
+  const [artifacts, setArtifacts] = useState<ArtifactData[]>([]);
+  const [openArtifactId, setOpenArtifactId] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const swarm = useSwarmStream();
+
+  const fetchArtifacts = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/conversations/${conversationId}/artifacts`);
+      if (!res.ok) return;
+      const data = (await res.json()) as { artifacts: ArtifactData[] };
+      setArtifacts(data.artifacts);
+    } catch {}
+  }, [conversationId]);
+
+  useEffect(() => { void fetchArtifacts(); }, [fetchArtifacts]);
+
+  const artifactsByMessage = useMemo(() => {
+    const map = new Map<string, ArtifactData[]>();
+    for (const a of artifacts) {
+      const arr = map.get(a.messageId) ?? [];
+      arr.push(a);
+      map.set(a.messageId, arr);
+    }
+    return map;
+  }, [artifacts]);
+
+  const openArtifact = useMemo(
+    () => (openArtifactId ? artifacts.find((a) => a.id === openArtifactId) ?? null : null),
+    [openArtifactId, artifacts],
+  );
 
   const modelIdRef = useRef(modelId);
   useEffect(() => { modelIdRef.current = modelId; }, [modelId]);
@@ -117,6 +146,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
       pendingAttachmentsRef.current = [];
       setErrorMsg(null);
       router.refresh();
+      void fetchArtifacts();
     },
   });
 
@@ -339,6 +369,8 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
                 reasoning={reasoning}
                 messageId={m.id}
                 onBranch={handleBranch}
+                artifacts={artifactsByMessage.get(m.id) ?? []}
+                onOpenArtifact={setOpenArtifactId}
               />
             );
           })}
@@ -410,6 +442,11 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
           personaId={personaId}
           onPersonaChange={setPersonaId}
         />
+      <ArtifactsPane
+        artifact={openArtifact}
+        onClose={() => setOpenArtifactId(null)}
+        versions={openArtifact ? artifacts.filter((a) => a.title === openArtifact.title && a.id !== openArtifact.id) : []}
+      />
     </main>
   );
 }

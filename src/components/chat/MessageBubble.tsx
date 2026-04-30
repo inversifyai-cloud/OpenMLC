@@ -7,6 +7,18 @@ import { getModel } from "@/lib/providers/registry";
 import { isImage } from "@/lib/mime";
 import type { ChatAttachment } from "@/types/chat";
 import { TtsButton } from "./TtsButton";
+import { ArtifactInline } from "./ArtifactInline";
+
+type ArtifactRef = {
+  id: string;
+  title: string;
+  type: "html" | "svg" | "code" | "markdown" | "react";
+  language?: string | null;
+};
+
+function stripArtifactTags(input: string): string {
+  return input.replace(/<artifact\s+[^>]*>[\s\S]*?<\/artifact>/gi, "").trim();
+}
 
 type TextPart      = { type: "text"; text: string };
 type ReasoningPart = { type: "reasoning"; text: string };
@@ -438,6 +450,8 @@ type Props = {
   reasoning?: string | null;
   messageId?: string;
   onBranch?: (messageId: string) => void;
+  artifacts?: ArtifactRef[];
+  onOpenArtifact?: (artifactId: string) => void;
 };
 
 function fmtTime(iso?: string): string {
@@ -449,9 +463,10 @@ function fmtTime(iso?: string): string {
 export function MessageBubble({
   role, parts, text, modelId, streaming, createdAt,
   profileMonogram, profileDisplayName, attachments, reasoning,
-  messageId, onBranch,
+  messageId, onBranch, artifacts, onOpenArtifact,
 }: Props) {
   const isUser = role === "user";
+  const cleanText = !isUser && (artifacts?.length ?? 0) > 0 ? stripArtifactTags(text) : text;
   const model = modelId ? getModel(modelId) : null;
   const modelName = model?.name?.toLowerCase() ?? modelId ?? null;
   const modelShort = modelId
@@ -577,9 +592,17 @@ export function MessageBubble({
                   ) : null
                 ) : (
 
-                  text.trim() ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD}>{text}</ReactMarkdown>
+                  cleanText.trim() ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD}>{cleanText}</ReactMarkdown>
                   ) : null
+                )}
+
+                {!isUser && artifacts && artifacts.length > 0 && onOpenArtifact && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+                    {artifacts.map((a) => (
+                      <ArtifactInline key={a.id} artifact={a} onOpen={onOpenArtifact} />
+                    ))}
+                  </div>
                 )}
 
                 {parts && <SourceChips parts={parts} />}
