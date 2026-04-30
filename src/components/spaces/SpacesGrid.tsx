@@ -35,24 +35,14 @@ export function SpacesGrid({ initialSpaces }: Props) {
 
   return (
     <>
-      <div className="spc-hero">
-        <div className="spc-hero-text">
-          <span className="spc-eyebrow">Fig. 02 — Workspaces</span>
-          <h1 className="spc-title">Spaces</h1>
-          <p className="spc-sub">
-            Project-scoped rooms. Each space binds a system prompt, a default
-            model, scoped knowledge files, and its own memory shelf.
-          </p>
-        </div>
-        <div className="spc-actions">
-          <button
-            type="button"
-            className="spc-btn spc-btn--primary"
-            onClick={() => setFormOpen((o) => !o)}
-          >
-            {formOpen ? "× close" : "+ new space"}
-          </button>
-        </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+        <button
+          type="button"
+          className="spc-btn spc-btn--primary"
+          onClick={() => setFormOpen((o) => !o)}
+        >
+          {formOpen ? "× close" : "+ new space"}
+        </button>
       </div>
 
       <NewSpaceForm
@@ -62,16 +52,16 @@ export function SpacesGrid({ initialSpaces }: Props) {
 
       {spaces.length === 0 ? (
         <div className="spc-empty">
-          <span className="spc-empty-fig">Fig. 02.0 — Empty Set</span>
           <span className="spc-empty-title">no spaces yet</span>
           <span className="spc-empty-hint">
-            Create a space to bundle a project&rsquo;s prompt, files, memory, and
-            chats. Conversations outside any space remain at the root.
+            create a space to bundle a project&rsquo;s prompt, files, memory, and chats.
+            conversations outside any space remain at the root.
           </span>
           {!formOpen && (
             <button
               className="spc-btn spc-btn--primary"
               onClick={() => setFormOpen(true)}
+              style={{ marginTop: 12 }}
             >
               + create your first space
             </button>

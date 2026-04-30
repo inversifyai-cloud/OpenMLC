@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
 import { AppShell, PageHeader } from "@/components/chrome/AppShell";
-import { HomeHeader, buildDateLabel } from "@/components/home/HomeHeader";
+import { buildDateLabel } from "@/components/home/HomeHeader";
 import { RecentLibrary, type RecentItem } from "@/components/home/RecentLibrary";
 import { TopSpaces, type TopSpaceRow } from "@/components/home/TopSpaces";
 import { UpcomingRuns, type UpcomingRow } from "@/components/home/UpcomingRuns";
@@ -243,15 +243,7 @@ export default async function Home() {
         }
       />
 
-      <HomeHeader
-        displayName={profile.displayName}
-        todaySpend={todaySpend}
-        weekSpend={weekSpend}
-        spark={spark}
-        dateLabel={dateLabel}
-      />
-
-      <section style={{ marginTop: 24, paddingBottom: 20, borderBottom: "1px solid var(--stroke-1)" }}>
+      <section style={{ paddingBottom: 20, borderBottom: "1px solid var(--stroke-1)" }}>
         {lastConv ? (
           <Link
             href={`/chat/${lastConv.id}`}

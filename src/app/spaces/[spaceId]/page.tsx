@@ -52,25 +52,56 @@ export default async function SpaceDetailPage({ params }: RouteParams) {
   }
 
   return (
-    <main className="spc-shell">
-      <div className="spc-detail-head">
-        <span className="spc-detail-emoji" aria-hidden>{space.emoji || "◇"}</span>
-        <div className="spc-detail-text">
-          <span className="spc-eyebrow">
-            Fig. 02.{space.id.slice(-4)} — {fmtDate(space.createdAt)}
+    <div>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          paddingBottom: 16,
+          borderBottom: "1px solid var(--stroke-1)",
+          marginBottom: 24,
+        }}
+      >
+        <span style={{ fontSize: 28, lineHeight: 1 }} aria-hidden>
+          {space.emoji || "◇"}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "var(--fg-3)",
+            }}
+          >
+            spaces · {fmtDate(space.createdAt)}
           </span>
-          <h1 className="spc-detail-name">{space.name}</h1>
+          <h1
+            style={{
+              fontSize: 22,
+              fontWeight: 600,
+              letterSpacing: "-0.015em",
+              margin: "4px 0 2px",
+              color: "var(--fg-1)",
+            }}
+          >
+            {space.name}
+          </h1>
           {space.description && (
-            <p className="spc-detail-desc">{space.description}</p>
+            <p style={{ color: "var(--fg-3)", fontSize: 13, margin: 0 }}>
+              {space.description}
+            </p>
           )}
         </div>
-        <div className="spc-actions">
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           <Link href="/spaces" className="spc-btn spc-btn--ghost">← all spaces</Link>
           <Link href={`/spaces/${space.id}/settings`} className="spc-btn">
             settings
           </Link>
         </div>
-      </div>
+      </header>
 
       <section className="spc-section">
         <header className="spc-section-head">
@@ -148,6 +179,6 @@ export default async function SpaceDetailPage({ params }: RouteParams) {
           )}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

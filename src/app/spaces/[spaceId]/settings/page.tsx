@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
+import { PageHeader } from "@/components/chrome/AppShell";
 import { SpaceSettingsForm } from "@/components/spaces/SpaceSettingsForm";
 
 export const dynamic = "force-dynamic";
@@ -23,23 +24,15 @@ export default async function SpaceSettingsPage({ params }: RouteParams) {
   });
 
   return (
-    <main className="spc-shell">
-      <div className="spc-hero">
-        <div className="spc-hero-text">
-          <span className="spc-eyebrow">
-            Fig. 02.{space.id.slice(-4)} — Settings
-          </span>
-          <h1 className="spc-title">
-            {space.emoji ? `${space.emoji} ` : ""}{space.name}
-          </h1>
-          <p className="spc-sub">
-            Edit identity, system prompt, and defaults for new chats opened in this space.
-          </p>
-        </div>
-        <div className="spc-actions">
+    <div style={{ maxWidth: 760 }}>
+      <PageHeader
+        kicker="spaces · settings"
+        title={`${space.emoji ? `${space.emoji} ` : ""}${space.name}`}
+        subtitle="edit identity, system prompt, and defaults for new chats opened in this space."
+        right={
           <Link href={`/spaces/${space.id}`} className="spc-btn spc-btn--ghost">← back</Link>
-        </div>
-      </div>
+        }
+      />
       <SpaceSettingsForm
         space={{
           id: space.id,
@@ -53,6 +46,6 @@ export default async function SpaceSettingsPage({ params }: RouteParams) {
         }}
         personas={personas}
       />
-    </main>
+    </div>
   );
 }
