@@ -88,12 +88,30 @@ export function getCurrentDateContext(): string {
   return `\n\nthe current date is ${date}.`;
 }
 
+export const RESEARCH_PROMPT = `RESEARCH MODE. The user asked a research question. Plan 2-4 web queries first. For each result you find useful, call research_note(kind='source', url, title, snippet) BEFORE relying on it - it returns a citation index [N]. In your final answer, every factual claim must end with the matching [N] cite. After at least 2 search rounds, produce ONE artifact of type='research' with JSON:
+{"answer": "<markdown answer with [N] cites>", "sources": [{"idx":1,"title":"...","url":"..."}]}
+Do NOT chat in prose; the artifact IS your reply.`;
+
+export const BROWSER_PROMPT = `
+
+## Browser tools
+
+You have a sandboxed browser available via browser_* tools. Use it for tasks that require seeing or interacting with live web pages. Always start with browser_navigate. Take screenshots into account when deciding what to click; coordinates are in the screenshot's pixel space (1280x800). Prefer browser_extract for grabbing text without re-screenshotting.`;
+
 export function composeSystemPrompt(opts: {
   conversationPrompt?: string | null;
   personaPrompt?: string | null;
   memoryBlock?: string | null;
+  researchPrompt?: string | null;
+  browserEnabled?: boolean;
 } = {}): string {
   let out = BASE_SYSTEM_PROMPT + ARTIFACTS_PROMPT + getCurrentDateContext();
+  if (opts.browserEnabled) {
+    out += BROWSER_PROMPT;
+  }
+  if (opts.researchPrompt) {
+    out = `${opts.researchPrompt}\n\n${out}`;
+  }
   if (opts.personaPrompt) {
     out += `\n\n${opts.personaPrompt}`;
   }

@@ -13,7 +13,7 @@ import { extractArtifacts, type ExtractedArtifact } from "@/lib/artifacts/extrac
 export type ArtifactRef = {
   id: string;
   title: string;
-  type: "html" | "svg" | "code" | "markdown" | "react" | "mermaid" | "chart";
+  type: "html" | "svg" | "code" | "markdown" | "react" | "mermaid" | "chart" | "research";
   language?: string | null;
   content: string;
 };
@@ -59,6 +59,14 @@ const TOOL_LABELS: Record<string, string> = {
   generate_image: "generate image",
   image_gen:      "generate image",
   remember:       "saved memory",
+  browser_navigate: "browser → navigate",
+  browser_click:    "browser → click",
+  browser_type:     "browser → type",
+  browser_press:    "browser → press",
+  browser_scroll:   "browser → scroll",
+  browser_back:     "browser → back",
+  browser_forward:  "browser → forward",
+  browser_extract:  "browser → extract",
 };
 
 function resolveToolName(part: ToolPart): string {
@@ -233,6 +241,45 @@ function GenericToolOutput({ output }: { output: unknown }) {
   );
 }
 
+function BrowserToolOutput({ output, rawName }: { output: unknown; rawName: string }) {
+  const o = typeof output === "object" && output ? (output as Record<string, unknown>) : {};
+  const screenshot = typeof o.screenshot === "string" ? o.screenshot : null;
+  const screenshotPath = typeof o.screenshotPath === "string" ? o.screenshotPath : null;
+  const url = typeof o.url === "string" ? o.url : "";
+  const title = typeof o.title === "string" ? o.title : "";
+  const text = typeof o.text === "string" ? o.text : "";
+  const imgSrc = screenshot || screenshotPath;
+  const action = rawName.replace(/^browser_/, "");
+  return (
+    <div>
+      {imgSrc && (
+        <div style={{ marginBottom: 6, border: "1px solid var(--stroke-2)", borderRadius: "var(--r-2)", overflow: "hidden", background: "var(--bg-canvas)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imgSrc}
+            alt={`browser ${action} screenshot`}
+            style={{ display: "block", width: "100%", maxHeight: 400, objectFit: "contain" }}
+          />
+        </div>
+      )}
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--fg-3)", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <span style={{ textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--fg-4)" }}>{action}</span>
+        {title && <span style={{ color: "var(--fg-2)" }}>{title.slice(0, 80)}</span>}
+        {url && (
+          <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--fg-accent)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 300 }}>
+            {url}
+          </a>
+        )}
+      </div>
+      {text && (
+        <pre style={{ marginTop: 8, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.5, maxHeight: 240, overflow: "auto", background: "var(--bg-canvas)", padding: 8, borderRadius: "var(--r-2)", border: "1px solid var(--stroke-1)" }}>
+          {text.slice(0, 4000)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 function ImageGenOutput({ output }: { output: unknown }) {
   const data = output as { url?: string; prompt?: string; attachmentId?: string } | null;
   if (!data?.url) return <GenericToolOutput output={output} />;
@@ -354,7 +401,13 @@ function ToolNode({ part, streaming }: { part: ToolPart; streaming?: boolean }) 
       case "kb_search":   body = <KbSearchOutput output={part.output} />; break;
       case "image_gen":   body = <ImageGenOutput output={part.output} />; break;
       case "generate_image": body = <ImageGenOutput output={part.output} />; break;
-      default:            body = <GenericToolOutput output={part.output} />; break;
+      default:
+        if (rawName.startsWith("browser_")) {
+          body = <BrowserToolOutput output={part.output} rawName={rawName} />;
+        } else {
+          body = <GenericToolOutput output={part.output} />;
+        }
+        break;
     }
   } else if (isError) {
     body = (

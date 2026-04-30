@@ -13,6 +13,13 @@
 # WARNING: `docker compose down -v` wipes your conversations + uploaded files.
 
 services:
+  browser:
+    image: ghcr.io/inversifyai-cloud/openmlc-browser:latest
+    profiles: ["browser"]
+    restart: unless-stopped
+    shm_size: 1gb
+    networks: [default]
+
   openmlc:
     image: ghcr.io/inversifyai-cloud/openmlc:latest
     build:
@@ -26,6 +33,8 @@ services:
       - .env
     environment:
       DATABASE_URL: "file:/data/openmlc.db"
+      OPENMLC_BROWSER_URL: "http://browser:3030"
+      OPENMLC_BROWSER_ENABLED: "${OPENMLC_BROWSER_ENABLED:-false}"
     volumes:
       - openmlc-data:/data
       - openmlc-uploads:/app/uploads

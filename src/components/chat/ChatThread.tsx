@@ -59,6 +59,9 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("off");
   const [swarmMode, setSwarmMode] = useState(false);
+  const [researchMode, setResearchMode] = useState(false);
+  const [browserMode, setBrowserMode] = useState(false);
+  const [browserAvailable, setBrowserAvailable] = useState(false);
   const [artifacts, setArtifacts] = useState<ArtifactData[]>([]);
   const [openArtifact, setOpenArtifact] = useState<ArtifactRef | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -112,6 +115,23 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
   const reasoningEffortRef = useRef<ReasoningEffort>("off");
   useEffect(() => { reasoningEffortRef.current = reasoningEffort; }, [reasoningEffort]);
 
+  const researchModeRef = useRef(false);
+  useEffect(() => { researchModeRef.current = researchMode; }, [researchMode]);
+
+  const browserModeRef = useRef(false);
+  useEffect(() => { browserModeRef.current = browserMode; }, [browserMode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/browser/status")
+      .then((r) => r.ok ? r.json() : { available: false })
+      .then((d: { available?: boolean }) => {
+        if (!cancelled) setBrowserAvailable(!!d.available);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     setReasoningEffort(loadReasoningEffort());
   }, []);
@@ -143,6 +163,8 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
           conversationId,
           attachmentIds: pendingAttachmentsRef.current,
           reasoningEffort: reasoningEffortRef.current,
+          researchMode: researchModeRef.current,
+          browserMode: browserModeRef.current,
         },
       }),
     });
@@ -454,6 +476,11 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
           onReasoningEffortChange={setReasoningEffort}
           swarmMode={swarmMode}
           onSwarmToggle={setSwarmMode}
+          researchMode={researchMode}
+          onResearchToggle={setResearchMode}
+          browserMode={browserMode}
+          onBrowserToggle={setBrowserMode}
+          browserAvailable={browserAvailable}
           conversationId={conversationId}
           personaId={personaId}
           onPersonaChange={setPersonaId}

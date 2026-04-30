@@ -9,7 +9,16 @@ export type ToolName =
   | "code_exec"
   | "generate_image"
   | "image_gen"
-  | "remember";
+  | "remember"
+  | "research_note"
+  | "browser_navigate"
+  | "browser_click"
+  | "browser_type"
+  | "browser_press"
+  | "browser_scroll"
+  | "browser_back"
+  | "browser_forward"
+  | "browser_extract";
 
 export interface ToolContext {
   profileId: string;

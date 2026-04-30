@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { findModel } from "@/lib/providers/catalog";
 import { getProviderModel } from "@/lib/providers";
 import { resolveProviderKey } from "@/lib/providers/resolve-key";
-import { composeSystemPrompt } from "@/lib/ai/system-prompts";
+import { composeSystemPrompt, RESEARCH_PROMPT } from "@/lib/ai/system-prompts";
 import { searchMemories, formatMemoriesForPrompt, extractMemoriesFromConversation } from "@/lib/ai/memory";
 import { isImage, imageToBuffer } from "@/lib/attachments";
 import { buildToolsForRequest, toolsSystemPromptHint } from "@/lib/ai/tools";
@@ -29,6 +29,8 @@ const bodySchema = z.object({
   toolsEnabled: z.boolean().optional(),
   webSearchEnabled: z.boolean().optional(),
   knowledgeBaseEnabled: z.boolean().optional(),
+  researchMode: z.boolean().optional(),
+  browserMode: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {
@@ -57,6 +59,8 @@ export async function POST(req: Request) {
     toolsEnabled = true,
     webSearchEnabled = true,
     knowledgeBaseEnabled = true,
+    researchMode = false,
+    browserMode = false,
   } = parsed.data;
   const uiMessages = messages as UIMessage[];
 
@@ -199,7 +203,7 @@ export async function POST(req: Request) {
     },
     sandboxEnabled: settings.codeSandboxEnabled,
   };
-  const { tools: builtinTools, enabledNames } = buildToolsForRequest({
+  const { tools: builtinTools, enabledNames, connectorProviders } = await buildToolsForRequest({
     model,
     userPrefs: {
       toolsEnabled,
@@ -229,10 +233,30 @@ export async function POST(req: Request) {
     }
   }
 
+  let researchSessionId: string | null = null;
+  if (researchMode && userText) {
+    try {
+      const created = await db.researchSession.create({
+        data: {
+          conversationId,
+          query: userText.slice(0, 2000),
+          status: "executing",
+        },
+      });
+      researchSessionId = created.id;
+    } catch (err) {
+      console.error("[chat] research session create failed", err);
+    }
+  }
+
+  const browserSidecarEnabled =
+    process.env.OPENMLC_BROWSER_ENABLED === "true" && browserMode;
   const systemBase = composeSystemPrompt({
     conversationPrompt: conv.systemPrompt,
     personaPrompt: conv.persona?.systemPrompt ?? null,
     memoryBlock,
+    researchPrompt: researchMode ? RESEARCH_PROMPT : null,
+    browserEnabled: browserSidecarEnabled,
   });
   const ragBlock = ragContext
     ? `\n\n[knowledge base context — relevant excerpts from the user's uploaded documents:\n${ragContext}\n]\nWhen using these excerpts, cite the source filename inline.`
@@ -240,7 +264,7 @@ export async function POST(req: Request) {
   const urlBlock = urlInjections.length > 0
     ? `\n\n[the user pasted ${urlInjections.length} URL(s) — pre-fetched contents:\n\n${urlInjections.join("\n\n---\n\n")}\n]\nWhen referencing these, mention the page title.`
     : "";
-  const toolHint = toolsSystemPromptHint(enabledNames);
+  const toolHint = toolsSystemPromptHint(enabledNames, connectorProviders);
   const systemPrompt = systemBase + ragBlock + urlBlock + toolHint;
 
   const providerOptions: Record<string, any> = {};
@@ -291,7 +315,7 @@ export async function POST(req: Request) {
     system: systemPrompt,
     messages: modelMessages,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
-    stopWhen: stepCountIs(25),
+    stopWhen: stepCountIs(researchMode ? 40 : 25),
     abortSignal: req.signal,
     providerOptions: Object.keys(providerOptions).length > 0 ? providerOptions : undefined,
     onFinish: async ({ text, usage, reasoningText, steps }) => {
@@ -351,6 +375,17 @@ export async function POST(req: Request) {
               version: 1,
             })),
           });
+        }
+
+        if (researchSessionId) {
+          await db.researchSession.update({
+            where: { id: researchSessionId },
+            data: {
+              status: "done",
+              completedAt: new Date(),
+              messageId: assistantMsg.id,
+            },
+          }).catch((err) => console.error("[chat] research session finish failed", err));
         }
       } catch (err) {
         console.error("[chat] persist failed", err);

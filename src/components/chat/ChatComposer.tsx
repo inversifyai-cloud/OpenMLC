@@ -47,6 +47,11 @@ type Props = {
   onReasoningEffortChange: (effort: ReasoningEffort) => void;
   swarmMode?: boolean;
   onSwarmToggle?: (active: boolean) => void;
+  researchMode?: boolean;
+  onResearchToggle?: (active: boolean) => void;
+  browserMode?: boolean;
+  onBrowserToggle?: (active: boolean) => void;
+  browserAvailable?: boolean;
   conversationId: string;
   personaId: string | null;
   onPersonaChange: (personaId: string | null) => void;
@@ -67,6 +72,11 @@ export function ChatComposer({
   onReasoningEffortChange,
   swarmMode = false,
   onSwarmToggle,
+  researchMode = false,
+  onResearchToggle,
+  browserMode = false,
+  onBrowserToggle,
+  browserAvailable = false,
   conversationId,
   personaId,
   onPersonaChange,
@@ -259,6 +269,46 @@ export function ChatComposer({
                 <path d="M12 7v4M12 11l-5 6M12 11l5 6" />
               </svg>
               {swarmMode ? "swarm: on" : "swarm"}
+            </button>
+          )}
+
+          {onResearchToggle && (
+            <button
+              type="button"
+              className={`tool-pill${researchMode ? " active" : ""}`}
+              onClick={() => onResearchToggle(!researchMode)}
+              aria-label={researchMode ? "disable research mode" : "enable research mode"}
+              title={researchMode ? "deep research on — click to disable" : "deep research mode"}
+              style={researchMode ? { color: "var(--green-400)", borderColor: "var(--green-400)" } : undefined}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M2 12h6" />
+                <path d="M22 12h-6" />
+                <circle cx="12" cy="12" r="5" />
+                <path d="M12 2v3" />
+                <path d="M12 19v3" />
+                <path d="M4.93 4.93l2.12 2.12" />
+                <path d="M16.95 16.95l2.12 2.12" />
+              </svg>
+              {researchMode ? "research: on" : "research"}
+            </button>
+          )}
+
+          {browserAvailable && onBrowserToggle && (
+            <button
+              type="button"
+              className={`tool-pill${browserMode ? " active" : ""}`}
+              onClick={() => onBrowserToggle(!browserMode)}
+              aria-label={browserMode ? "disable browser tools" : "enable browser tools"}
+              title={browserMode ? "browser tools on — click to disable" : "let the model drive a sandboxed browser"}
+              style={browserMode ? { color: "var(--green-400)", borderColor: "var(--green-400)" } : undefined}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              {browserMode ? "browser: on" : "browser"}
             </button>
           )}
 

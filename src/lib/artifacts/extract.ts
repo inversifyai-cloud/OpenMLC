@@ -1,13 +1,13 @@
 
 
 export interface ExtractedArtifact {
-  type: "html" | "svg" | "code" | "markdown" | "react" | "mermaid" | "chart";
+  type: "html" | "svg" | "code" | "markdown" | "react" | "mermaid" | "chart" | "research";
   language?: string;
   title: string;
   content: string;
 }
 
-const VALID_TYPES = new Set(["html", "svg", "code", "markdown", "react", "mermaid", "chart"]);
+const VALID_TYPES = new Set(["html", "svg", "code", "markdown", "react", "mermaid", "chart", "research"]);
 
 function parseType(raw: string): ExtractedArtifact["type"] {
   const t = raw.toLowerCase().trim();

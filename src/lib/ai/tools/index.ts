@@ -12,6 +12,11 @@ import { kbSearchDefinition } from "./kb-search";
 import { codeExecDefinition } from "./code-exec";
 import { imageGenDefinition } from "./image-gen";
 import { rememberDefinition } from "./remember";
+import { researchNoteDefinition } from "./research-note";
+import { browserDefinitions } from "./browser";
+import { db } from "@/lib/db";
+import { getConnector } from "@/lib/connectors";
+import { refreshIfExpired } from "@/lib/connectors/refresh";
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   webSearchDefinition,
@@ -20,18 +25,20 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   codeExecDefinition,
   imageGenDefinition,
   rememberDefinition,
+  researchNoteDefinition,
+  ...browserDefinitions,
 ];
 
-export function buildToolsForRequest(params: {
+export async function buildToolsForRequest(params: {
   model: Model;
   userPrefs: UserPrefsSlice;
   context: ToolContext;
-}): { tools: Record<string, Tool>; enabledNames: ToolName[] } {
+}): Promise<{ tools: Record<string, Tool>; enabledNames: ToolName[]; connectorProviders: string[] }> {
   if (!params.model.capabilities.includes("tools")) {
-    return { tools: {}, enabledNames: [] };
+    return { tools: {}, enabledNames: [], connectorProviders: [] };
   }
   if (params.userPrefs.toolsEnabled === false) {
-    return { tools: {}, enabledNames: [] };
+    return { tools: {}, enabledNames: [], connectorProviders: [] };
   }
   const tools: Record<string, Tool> = {};
   const enabledNames: ToolName[] = [];
@@ -42,11 +49,38 @@ export function buildToolsForRequest(params: {
     tools[def.name] = def.build(params.context);
     enabledNames.push(def.name);
   }
-  return { tools, enabledNames };
+
+  // Load enabled OAuth connector tools for this profile.
+  const connectorProviders: string[] = [];
+  try {
+    const connectorRows = await db.connector.findMany({
+      where: {
+        profileId: params.context.profileId,
+        enabled: true,
+        encryptedAccess: { not: null },
+      },
+    });
+    for (const row of connectorRows) {
+      const conn = getConnector(row.provider);
+      if (!conn) continue;
+      try {
+        const { accessToken } = await refreshIfExpired(row);
+        const builtTools = conn.buildTools({ profileId: params.context.profileId }, accessToken);
+        Object.assign(tools, builtTools);
+        connectorProviders.push(row.provider);
+      } catch (err) {
+        console.error(`[tools] connector ${row.provider} failed to build`, err);
+      }
+    }
+  } catch (err) {
+    console.error("[tools] failed to load connectors", err);
+  }
+
+  return { tools, enabledNames, connectorProviders };
 }
 
-export function toolsSystemPromptHint(names: ToolName[]): string {
-  if (names.length === 0) return "";
+export function toolsSystemPromptHint(names: ToolName[], connectorProviders: string[] = []): string {
+  if (names.length === 0 && connectorProviders.length === 0) return "";
   const parts: string[] = [];
   parts.push("\n\n[tools available — strict usage rules:");
   if (names.includes("web_search")) {
@@ -77,6 +111,16 @@ export function toolsSystemPromptHint(names: ToolName[]): string {
   if (names.includes("remember")) {
     parts.push(
       "- remember: save a durable fact about the user (preferences, role, tech stack, ongoing projects, important context) so it persists across conversations. call this whenever the user shares something worth knowing in future chats - their name, preferred languages, what they're building, etc. phrase the fact concisely in third person starting with 'User'. do NOT save in-the-moment requests, transient state, or speculation. do NOT mention saving the memory in your reply unless the user explicitly asks you to remember something."
+    );
+  }
+  if (names.includes("research_note")) {
+    parts.push(
+      "- research_note: only useful in research mode. call kind='source' for each web result you intend to cite — it returns the citation index [N]. call kind='note' to record partial findings or drafts. outside of research mode this is a no-op; do not call it."
+    );
+  }
+  if (connectorProviders.length > 0) {
+    parts.push(
+      `- connectors: you have these external accounts connected: ${connectorProviders.join(", ")}. use the matching tools (e.g. github_*, gmail_*) to read or act in the user's accounts. never send, create, or modify content without confirming intent with the user first.`,
     );
   }
   parts.push("]");

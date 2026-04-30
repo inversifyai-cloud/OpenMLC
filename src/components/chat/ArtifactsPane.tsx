@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export interface ArtifactData {
   id: string;
-  type: "html" | "svg" | "code" | "markdown" | "react" | "mermaid" | "chart";
+  type: "html" | "svg" | "code" | "markdown" | "react" | "mermaid" | "chart" | "research";
   language?: string | null;
   title: string;
   content: string;
@@ -201,7 +203,209 @@ function extForType(type: ArtifactData["type"], language?: string | null): strin
   if (type === "react") return ".jsx";
   if (type === "mermaid") return ".mmd";
   if (type === "chart") return ".chart.json";
+  if (type === "research") return ".json";
   return `.${language ?? "txt"}`;
+}
+
+type ResearchSource = { idx: number; title?: string; url?: string; snippet?: string };
+type ResearchPayload = { answer: string; sources: ResearchSource[] };
+
+function parseResearchPayload(raw: string): ResearchPayload {
+  const trimmed = sanitizeArtifactContent(raw);
+  try {
+    const parsed = JSON.parse(trimmed);
+    const answer = typeof parsed?.answer === "string" ? parsed.answer : "";
+    const sources: ResearchSource[] = Array.isArray(parsed?.sources)
+      ? parsed.sources
+          .map((s: unknown, i: number) => {
+            const o = (typeof s === "object" && s) ? s as Record<string, unknown> : {};
+            return {
+              idx: typeof o.idx === "number" ? o.idx : i + 1,
+              title: typeof o.title === "string" ? o.title : undefined,
+              url: typeof o.url === "string" ? o.url : undefined,
+              snippet: typeof o.snippet === "string" ? o.snippet : undefined,
+            } as ResearchSource;
+          })
+      : [];
+    return { answer, sources };
+  } catch {
+    return { answer: trimmed, sources: [] };
+  }
+}
+
+function getHostname(url?: string): string {
+  if (!url) return "";
+  try { return new URL(url).hostname.replace(/^www\./, ""); }
+  catch { return url.slice(0, 40); }
+}
+
+function ResearchView({ content }: { content: string }) {
+  const { answer, sources } = useMemo(() => parseResearchPayload(content), [content]);
+  const sourceRefs = useRef<Record<number, HTMLLIElement | null>>({});
+
+  const scrollToSource = useCallback((idx: number) => {
+    const el = sourceRefs.current[idx];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("research-source-flash");
+      setTimeout(() => el.classList.remove("research-source-flash"), 1200);
+    }
+  }, []);
+
+  const renderWithCites = useCallback((text: string): React.ReactNode => {
+    const parts: React.ReactNode[] = [];
+    const re = /\[(\d+)\]/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    let key = 0;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) parts.push(text.slice(last, m.index));
+      const idx = Number(m[1]);
+      parts.push(
+        <sup key={`c-${key++}`}>
+          <button
+            type="button"
+            className="research-cite-chip"
+            onClick={() => scrollToSource(idx)}
+            title={`Jump to source [${idx}]`}
+          >
+            [{idx}]
+          </button>
+        </sup>
+      );
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) parts.push(text.slice(last));
+    return parts;
+  }, [scrollToSource]);
+
+  const mdComponents: React.ComponentProps<typeof ReactMarkdown>["components"] = useMemo(() => ({
+    p: ({ children }) => {
+      const processed = React.Children.map(children, (child) =>
+        typeof child === "string" ? renderWithCites(child) : child
+      );
+      return <p style={{ margin: "8px 0", lineHeight: 1.65 }}>{processed}</p>;
+    },
+    li: ({ children }) => {
+      const processed = React.Children.map(children, (child) =>
+        typeof child === "string" ? renderWithCites(child) : child
+      );
+      return <li style={{ margin: "3px 0" }}>{processed}</li>;
+    },
+    a: ({ href, children }) => (
+      <a href={href} target="_blank" rel="noopener noreferrer"
+         style={{ color: "var(--fg-accent)", textDecoration: "underline", textUnderlineOffset: 3 }}>
+        {children}
+      </a>
+    ),
+    h1: ({ children }) => <h1 style={{ fontSize: 18, fontWeight: 600, margin: "14px 0 6px" }}>{children}</h1>,
+    h2: ({ children }) => <h2 style={{ fontSize: 15, fontWeight: 600, margin: "12px 0 6px" }}>{children}</h2>,
+    h3: ({ children }) => <h3 style={{ fontSize: 13, fontWeight: 500, margin: "10px 0 4px" }}>{children}</h3>,
+    code: ({ className, children }: { className?: string; children?: React.ReactNode }) => {
+      const isBlock = !!className?.startsWith("language-");
+      if (isBlock) return <pre style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 12, padding: 10, background: "var(--bg-canvas)", border: "1px solid var(--stroke-1)", borderRadius: 6, overflow: "auto" }}><code>{children}</code></pre>;
+      return <code className={className} style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 12, padding: "1px 5px", background: "var(--bg-canvas)", borderRadius: 4 }}>{children}</code>;
+    },
+  }), [renderWithCites]);
+
+  return (
+    <div className="research-view" style={{
+      display: "grid",
+      gridTemplateColumns: "minmax(0, 1.6fr) minmax(0, 1fr)",
+      gap: 16,
+      padding: 16,
+      height: "100%",
+      overflow: "hidden",
+    }}>
+      <div style={{
+        overflow: "auto",
+        paddingRight: 6,
+        fontSize: 13,
+        color: "var(--fg-1)",
+        lineHeight: 1.65,
+      }}>
+        {answer ? (
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{answer}</ReactMarkdown>
+        ) : (
+          <p style={{ color: "var(--fg-3)", fontFamily: "var(--font-mono, monospace)", fontSize: 12 }}>
+            (no answer body)
+          </p>
+        )}
+      </div>
+      <div style={{
+        overflow: "auto",
+        borderLeft: "1px solid var(--stroke-1)",
+        paddingLeft: 14,
+      }}>
+        <div style={{
+          fontFamily: "var(--font-mono, monospace)",
+          fontSize: 10,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "var(--fg-3)",
+          marginBottom: 10,
+        }}>
+          sources ({sources.length})
+        </div>
+        {sources.length === 0 ? (
+          <p style={{ color: "var(--fg-4)", fontSize: 12, fontFamily: "var(--font-mono, monospace)" }}>
+            no sources cited
+          </p>
+        ) : (
+          <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+            {sources.map((s) => (
+              <li
+                key={s.idx}
+                ref={(el) => { sourceRefs.current[s.idx] = el; }}
+                style={{
+                  border: "1px solid var(--stroke-1)",
+                  borderRadius: 6,
+                  padding: "8px 10px",
+                  background: "var(--bg-canvas)",
+                  transition: "background 200ms ease",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 3 }}>
+                  <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11, color: "var(--fg-accent)", fontWeight: 600 }}>
+                    [{s.idx}]
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: "var(--fg-1)", lineHeight: 1.4 }}>
+                    {s.title ?? s.url ?? "untitled"}
+                  </span>
+                </div>
+                {s.url && (
+                  <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 10, color: "var(--fg-3)", marginBottom: 4 }}>
+                    {getHostname(s.url)}
+                  </div>
+                )}
+                {s.snippet && (
+                  <p style={{ fontSize: 11, color: "var(--fg-3)", lineHeight: 1.5, margin: "0 0 6px", fontStyle: "italic" }}>
+                    &ldquo;{s.snippet}&rdquo;
+                  </p>
+                )}
+                {s.url && (
+                  <a
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontFamily: "var(--font-mono, monospace)",
+                      fontSize: 10,
+                      color: "var(--fg-accent)",
+                      textDecoration: "underline",
+                      textUnderlineOffset: 2,
+                    }}
+                  >
+                    visit ↗
+                  </a>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function downloadArtifact(artifact: ArtifactData) {
@@ -311,6 +515,9 @@ export function ArtifactsPane({ artifact, onClose, versions = [] }: ArtifactsPan
             )}
             {artifact.type === "code" && (
               <pre>{artifact.content}</pre>
+            )}
+            {artifact.type === "research" && (
+              <ResearchView content={artifact.content} />
             )}
           </>
         )}

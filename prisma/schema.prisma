@@ -49,6 +49,7 @@ model Profile {
   personas        Persona[]
   promptTemplates PromptTemplate[]
   customProviders CustomProvider[]
+  connectors      Connector[]
 }
 
 model ProfileSession {
@@ -445,4 +446,60 @@ model CustomProvider {
   profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@index([profileId])
+}
+
+model Connector {
+  id               String    @id @default(cuid())
+  profileId        String
+  provider         String    // "github" | "gmail" | "notion" | "linear"
+  clientId         String
+  encryptedSecret  String
+  encryptedAccess  String?
+  encryptedRefresh String?
+  expiresAt        DateTime?
+  scopes           String    @default("[]") // JSON
+  accountInfo      String?   // JSON: { login, email, name }
+  enabled          Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  profile          Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, provider])
+  @@index([profileId])
+}
+
+model ConnectorOAuthState {
+  state     String   @id
+  profileId String
+  provider  String
+  expiresAt DateTime
+}
+
+model BrowserSession {
+  id             String   @id @default(cuid())
+  profileId      String
+  conversationId String?
+  remoteId       String?  // sidecar's internal session id
+  startUrl       String?
+  status         String   @default("active") // active | closed | errored
+  steps          Int      @default(0)
+  lastScreenshot String?  // path to last PNG on disk
+  createdAt      DateTime @default(now())
+  closedAt       DateTime?
+  @@index([profileId, status])
+  @@index([conversationId])
+}
+
+model ResearchSession {
+  id             String   @id @default(cuid())
+  conversationId String
+  messageId      String?
+  query          String
+  plan           String?
+  status         String   @default("planning") // planning | executing | done | error
+  sources        String   @default("[]") // JSON: [{idx, title, url, snippet, fetchedAt}]
+  notes          String   @default("[]") // JSON: working notes
+  createdAt      DateTime @default(now())
+  completedAt    DateTime?
+  @@index([conversationId])
 }

@@ -4,7 +4,7 @@ interface ArtifactInlineProps {
   artifact: {
     id: string;
     title: string;
-    type: "html" | "svg" | "code" | "markdown" | "react" | "mermaid" | "chart";
+    type: "html" | "svg" | "code" | "markdown" | "react" | "mermaid" | "chart" | "research";
     language?: string | null;
   };
   onOpen: () => void;
@@ -18,6 +18,7 @@ export function ArtifactInline({ artifact, onOpen }: ArtifactInlineProps) {
     : artifact.type === "mermaid" ? "🔀"
     : artifact.type === "chart" ? "📊"
     : artifact.type === "markdown" ? "📝"
+    : artifact.type === "research" ? "🔬"
     : "📄";
 
   return (
