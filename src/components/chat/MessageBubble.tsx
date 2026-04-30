@@ -13,7 +13,7 @@ import { extractArtifacts, type ExtractedArtifact } from "@/lib/artifacts/extrac
 export type ArtifactRef = {
   id: string;
   title: string;
-  type: "html" | "svg" | "code" | "markdown" | "react";
+  type: "html" | "svg" | "code" | "markdown" | "react" | "mermaid" | "chart";
   language?: string | null;
   content: string;
 };

@@ -115,6 +115,7 @@ model Message {
   costUsd        Float?
   reasoning      String?
   toolCalls      String?
+  stepCount      Int?
   createdAt      DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

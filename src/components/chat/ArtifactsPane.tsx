@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 
 export interface ArtifactData {
   id: string;
-  type: "html" | "svg" | "code" | "markdown" | "react";
+  type: "html" | "svg" | "code" | "markdown" | "react" | "mermaid" | "chart";
   language?: string | null;
   title: string;
   content: string;
@@ -22,6 +22,112 @@ function sanitizeArtifactContent(raw: string): string {
   s = s.replace(/^```[a-zA-Z0-9_+-]*\s*\n?/, "");
   s = s.replace(/\n?```\s*$/, "");
   return s.trim();
+}
+
+function wrapMermaidDiagram(content: string, title: string): string {
+  const safe = sanitizeArtifactContent(content);
+  const escaped = safe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>${title.replace(/[<>"']/g, "")}</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<style>
+html,body{height:100%;margin:0;background:#fafaf7;font-family:system-ui,-apple-system,sans-serif;}
+body{display:flex;align-items:center;justify-content:center;padding:24px;}
+.mermaid{max-width:100%;}
+</style>
+</head>
+<body>
+<div class="mermaid">${escaped}</div>
+<script>
+mermaid.initialize({ startOnLoad: true, theme: "default", securityLevel: "loose" });
+</script>
+</body>
+</html>`;
+}
+
+function wrapChart(content: string, title: string): string {
+  const clean = sanitizeArtifactContent(content);
+  const looksLikeJsx = /<\w+/.test(clean) || /function\s+App/.test(clean);
+  if (looksLikeJsx) {
+    return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>${title.replace(/[<>"']/g, "")}</title>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/recharts@2.15.0/umd/Recharts.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js"></script>
+<style>html,body,#root{height:100%;margin:0;font-family:system-ui,-apple-system,sans-serif;}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="env,react">
+const { LineChart, BarChart, AreaChart, PieChart, Line, Bar, Area, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = window.Recharts;
+${clean.replace(/^\s*import[^;]*;\s*/gm, "")}
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>`;
+  }
+  let spec: { type?: string; data?: unknown[]; xKey?: string; yKeys?: string[]; title?: string } = {};
+  try { spec = JSON.parse(clean); } catch {}
+  const safeSpec = JSON.stringify(spec).replace(/</g, "\\u003c");
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>${title.replace(/[<>"']/g, "")}</title>
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/recharts@2.15.0/umd/Recharts.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>html,body,#root{height:100%;margin:0;background:#fafaf7;font-family:system-ui,-apple-system,sans-serif;}#root{padding:20px;display:flex;flex-direction:column;}</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const spec = ${safeSpec};
+const R = window.Recharts;
+const { createElement: h } = React;
+function ChartFor(spec) {
+  const colors = ["#16a34a","#3b82f6","#f59e0b","#ef4444","#a855f7","#06b6d4"];
+  const data = spec.data || [];
+  const yKeys = spec.yKeys || [];
+  const xKey = spec.xKey || "x";
+  const Chart = ({ "line": R.LineChart, "bar": R.BarChart, "area": R.AreaChart, "pie": R.PieChart })[spec.type] || R.LineChart;
+  if (spec.type === "pie") {
+    return h(R.ResponsiveContainer, { width: "100%", height: "100%" },
+      h(R.PieChart, null,
+        h(R.Pie, { data, dataKey: yKeys[0] || "value", nameKey: xKey, cx: "50%", cy: "50%", outerRadius: 100, label: true },
+          data.map((_, i) => h(R.Cell, { key: i, fill: colors[i % colors.length] }))
+        ),
+        h(R.Tooltip, null), h(R.Legend, null)
+      ));
+  }
+  const Series = { "line": R.Line, "bar": R.Bar, "area": R.Area }[spec.type] || R.Line;
+  return h(R.ResponsiveContainer, { width: "100%", height: "100%" },
+    h(Chart, { data, margin: { top: 20, right: 24, left: 0, bottom: 8 } },
+      h(R.CartesianGrid, { strokeDasharray: "3 3", stroke: "#e8e6df" }),
+      h(R.XAxis, { dataKey: xKey, tick: { fontSize: 11 } }),
+      h(R.YAxis, { tick: { fontSize: 11 } }),
+      h(R.Tooltip, null), h(R.Legend, null),
+      ...yKeys.map((k, i) => h(Series, { key: k, type: "monotone", dataKey: k, stroke: colors[i % colors.length], fill: colors[i % colors.length], fillOpacity: 0.4 }))
+    ));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(
+  spec.title ? h("div", { style: { display: "flex", flexDirection: "column", height: "100%" } },
+    h("h2", { style: { margin: 0, marginBottom: 12, fontSize: 16, fontWeight: 600 } }, spec.title),
+    h("div", { style: { flex: 1, minHeight: 0 } }, ChartFor(spec))
+  ) : ChartFor(spec)
+);
+</script>
+</body>
+</html>`;
 }
 
 function wrapReactComponent(code: string, title: string): string {
@@ -93,6 +199,8 @@ function extForType(type: ArtifactData["type"], language?: string | null): strin
   if (type === "svg") return ".svg";
   if (type === "markdown") return ".md";
   if (type === "react") return ".jsx";
+  if (type === "mermaid") return ".mmd";
+  if (type === "chart") return ".chart.json";
   return `.${language ?? "txt"}`;
 }
 
@@ -174,6 +282,20 @@ export function ArtifactsPane({ artifact, onClose, versions = [] }: ArtifactsPan
               <iframe
                 sandbox="allow-scripts allow-popups allow-modals allow-forms"
                 srcDoc={wrapReactComponent(artifact.content, artifact.title)}
+                title={artifact.title}
+              />
+            )}
+            {artifact.type === "mermaid" && (
+              <iframe
+                sandbox="allow-scripts"
+                srcDoc={wrapMermaidDiagram(artifact.content, artifact.title)}
+                title={artifact.title}
+              />
+            )}
+            {artifact.type === "chart" && (
+              <iframe
+                sandbox="allow-scripts"
+                srcDoc={wrapChart(artifact.content, artifact.title)}
                 title={artifact.title}
               />
             )}

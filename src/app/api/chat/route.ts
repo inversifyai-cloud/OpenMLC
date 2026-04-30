@@ -291,12 +291,13 @@ export async function POST(req: Request) {
     system: systemPrompt,
     messages: modelMessages,
     tools: Object.keys(tools).length > 0 ? tools : undefined,
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(25),
     abortSignal: req.signal,
     providerOptions: Object.keys(providerOptions).length > 0 ? providerOptions : undefined,
-    onFinish: async ({ text, usage, reasoningText }) => {
+    onFinish: async ({ text, usage, reasoningText, steps }) => {
       if (!text) return;
       try {
+        const stepCount = Array.isArray(steps) ? steps.length : null;
         const assistantMsg = await db.message.create({
           data: {
             conversationId,
@@ -306,6 +307,7 @@ export async function POST(req: Request) {
             reasoning: reasoningText ?? null,
             inputTokens: usage?.inputTokens ?? null,
             outputTokens: usage?.outputTokens ?? null,
+            stepCount,
           },
         });
         await db.conversation.update({
