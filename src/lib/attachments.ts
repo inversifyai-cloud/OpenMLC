@@ -18,11 +18,15 @@ export async function extractText(
   const fullPath = safePath(filePath);
   try {
     if (mimeType === "application/pdf") {
-
-      const pdfParse = require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
+      const { PDFParse } = require("pdf-parse") as {
+        PDFParse: new (opts: { data: Buffer | Uint8Array }) => {
+          getText: () => Promise<{ text: string }>;
+        };
+      };
       const buf = await readFile(fullPath);
-      const data = await pdfParse(buf);
-      return data.text?.slice(0, 50_000) ?? null;
+      const parser = new PDFParse({ data: buf });
+      const result = await parser.getText();
+      return result.text?.slice(0, 50_000) ?? null;
     }
     if (isText(mimeType) || mimeType === "application/octet-stream" || mimeType.startsWith("application/")) {
       const content = await readFile(fullPath, "utf-8");
