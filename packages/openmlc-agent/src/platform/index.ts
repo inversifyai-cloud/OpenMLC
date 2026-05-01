@@ -1,18 +1,16 @@
 import { detectPlatform } from "./detect.js";
+import * as macos from "./macos.js";
+import * as linux from "./linux.js";
+import * as windows from "./windows.js";
 
 const platform = detectPlatform();
 
-let impl: typeof import("./macos.js");
+const impl = platform === "macos" ? macos
+           : platform === "linux" ? linux
+           : platform === "windows" ? windows
+           : null;
 
-if (platform === "macos") {
-  impl = await import("./macos.js");
-} else if (platform === "linux") {
-  impl = await import("./linux.js") as any;
-} else if (platform === "windows") {
-  impl = await import("./windows.js") as any;
-} else {
-  throw new Error("Unsupported platform: " + process.platform);
-}
+if (!impl) throw new Error("Unsupported platform: " + process.platform);
 
 export const {
   screenshot,

@@ -2,12 +2,11 @@
   "name": "openmlc-agent",
   "version": "0.1.0",
   "description": "Host-machine control daemon for OpenMLC computer agent mode.",
-  "type": "module",
   "bin": {
     "openmlc-agent": "./dist/index.js"
   },
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --format=esm --banner:js='#!/usr/bin/env node'",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --format=cjs --banner:js='#!/usr/bin/env node'",
     "dev": "tsx src/index.ts",
     "prepublishOnly": "npm run build"
   },
