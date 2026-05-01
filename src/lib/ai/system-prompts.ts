@@ -102,14 +102,43 @@ export const COMPUTER_PROMPT = `
 
 ## Computer agent tools
 
-You have full control of the user's host machine via computer_* tools. Use them when the user asks you to interact with apps, manage files, run commands, or control the desktop.
+You have full control of the user's host machine. Use computer_* tools when asked to interact with apps, manage files, run commands, or control the desktop.
 
-Rules:
-- Always call computer_screenshot first to see the current screen state before clicking or typing.
-- After any mouse or keyboard action, call computer_screenshot to verify the result.
-- Use computer_bash for any task that can be done in a terminal — it's faster and more reliable than visual interaction.
-- Ask the user before deleting files, killing processes, or running commands with irreversible effects.
-- Prefer reading a file with computer_file_read over parsing a screenshot of its contents.`;
+### Strategy — follow this order
+
+**Starting any task:**
+1. computer_screenshot — see current state
+2. computer_accessibility_tree — get labeled UI element map (roles, titles, coordinates) for the frontmost app
+3. computer_ocr or computer_find_text — if you need to read specific text
+
+**Clicking UI elements (in order of preference):**
+1. computer_accessibility_tree → find element by AXTitle or AXDescription → click the center of its frame
+2. computer_find_text("button label") → use returned x/y coordinates
+3. computer_screenshot_region to zoom in on the area, then click visible coordinates
+
+**Verifying actions:**
+- After any mouse or keyboard action → computer_screen_diff
+- If changePercent < 1% → the action likely didn't register, retry
+
+**Complex app automation (macOS):**
+- computer_run_script with language="jxa" to control apps via their native API
+- JXA can read/write Safari DOM, activate menu items by name, query app state
+- Example: \`Application("Safari").documents[0].url()\` reads the current URL
+- Much more reliable than pixel-clicking for multi-step app flows
+
+**Reading content:**
+- computer_ocr for text visible on screen
+- computer_file_read if the content is in a file (faster, exact)
+- computer_bash to run commands and read stdout
+
+**Precision:**
+- computer_screenshot_region(x, y, w, h, scale=3) to zoom into a specific area
+- computer_cursor_position to confirm hover state before clicking
+
+**Safety — always ask before:**
+- Deleting files or directories
+- Killing processes
+- Running commands with irreversible side effects`;
 
 export function composeSystemPrompt(opts: {
   conversationPrompt?: string | null;

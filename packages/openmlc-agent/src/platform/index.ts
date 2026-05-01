@@ -26,4 +26,12 @@ export const {
   launchApp,
   listWindows,
   focusWindow,
+  // new
+  screenshotRaw,
+  screenshotRegion,
+  cursorPosition,
+  accessibilityTree,
+  ocrScreen,
+  findText,
+  runScript,
 } = impl;

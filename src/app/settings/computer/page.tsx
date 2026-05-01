@@ -42,11 +42,51 @@ const DEPS: Record<OS, string> = {
   windows: "# Node.js required — download from https://nodejs.org",
 };
 
+const OPENMLC_URL = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+
 const RUN_CMD = (token: string) =>
-  `AGENT_TOKEN=${token || "your-secret-token"} node openmlc-agent.js`;
+  `AGENT_TOKEN=${token || "your-secret-token"} WATCH_URL=${OPENMLC_URL} node openmlc-agent.js`;
 
 const WIN_RUN_CMD = (token: string) =>
-  `set AGENT_TOKEN=${token || "your-secret-token"} && node openmlc-agent.js`;
+  `set AGENT_TOKEN=${token || "your-secret-token"} && set WATCH_URL=${OPENMLC_URL} && node openmlc-agent.js`;
+
+function downloadLaunchScript(os: OS, token: string) {
+  const origin = window.location.origin;
+  let content: string;
+  let filename: string;
+  let mime: string;
+
+  if (os === "macos" || os === "linux") {
+    content = [
+      "#!/bin/bash",
+      `# OpenMLC Agent launcher — auto-quits when OpenMLC stops`,
+      `cd "$(dirname "$0")"`,
+      `export AGENT_TOKEN="${token || "your-secret-token"}"`,
+      `export WATCH_URL="${origin}"`,
+      `node openmlc-agent.js`,
+    ].join("\n") + "\n";
+    filename = os === "macos" ? "start-openmlc-agent.command" : "start-openmlc-agent.sh";
+    mime = "text/plain";
+  } else {
+    content = [
+      `@echo off`,
+      `cd /d "%~dp0"`,
+      `set AGENT_TOKEN=${token || "your-secret-token"}`,
+      `set WATCH_URL=${origin}`,
+      `node openmlc-agent.js`,
+      `pause`,
+    ].join("\r\n") + "\r\n";
+    filename = "start-openmlc-agent.bat";
+    mime = "text/plain";
+  }
+
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 export default function ComputerAgentPage() {
   const [url, setUrl] = useState("http://host.docker.internal:3031");
@@ -167,31 +207,58 @@ export default function ComputerAgentPage() {
           {(["macos", "linux", "windows"] as OS[]).map((o) => pillBtn(os === o, () => setOs(o), OS_LABELS[o]))}
         </div>
 
-        {/* Download button */}
-        <a
-          href="/api/computer/agent"
-          download="openmlc-agent.js"
-          style={{
-            ...MONO,
-            display: "inline-block",
-            background: "var(--fg-accent)",
-            color: "#FAFAF7",
-            border: "1px solid var(--fg-accent)",
-            borderRadius: "var(--r-2)",
-            padding: "8px 16px",
-            fontWeight: 500,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase" as const,
-            textDecoration: "none",
-            marginBottom: 16,
-          }}
-        >
-          ↓ download openmlc-agent.js
-        </a>
+        {/* Download buttons */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+          <a
+            href="/api/computer/agent"
+            download="openmlc-agent.js"
+            style={{
+              ...MONO,
+              display: "inline-block",
+              background: "var(--fg-accent)",
+              color: "#FAFAF7",
+              border: "1px solid var(--fg-accent)",
+              borderRadius: "var(--r-2)",
+              padding: "8px 16px",
+              fontWeight: 500,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase" as const,
+              textDecoration: "none",
+            }}
+          >
+            ↓ openmlc-agent.js
+          </a>
+          <button
+            type="button"
+            onClick={() => downloadLaunchScript(os, token)}
+            style={{
+              ...MONO,
+              background: "transparent",
+              color: "var(--fg-2)",
+              border: "1px solid var(--stroke-1)",
+              borderRadius: "var(--r-2)",
+              padding: "8px 16px",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase" as const,
+              cursor: "pointer",
+            }}
+          >
+            ↓ launch script {os === "macos" ? "(.command)" : os === "windows" ? "(.bat)" : "(.sh)"}
+          </button>
+        </div>
+
+        <p style={{ ...MONO, fontSize: 10, color: "var(--fg-3)", margin: "0 0 14px", lineHeight: 1.7 }}>
+          Put both files in the same folder. {os === "macos"
+            ? "Double-click the .command file to start the agent. macOS may ask you to allow it in Security & Privacy."
+            : os === "windows"
+            ? "Double-click the .bat file to start the agent."
+            : "Run: chmod +x start-openmlc-agent.sh && ./start-openmlc-agent.sh"}
+          {" "}The agent auto-quits when OpenMLC stops.
+        </p>
 
         {/* Deps */}
         <div style={{ marginBottom: 12 }}>
-          <span style={LABEL}>1. install dependencies</span>
+          <span style={LABEL}>install dependencies first</span>
           <pre style={{
             ...MONO,
             background: "var(--bg-canvas)",
@@ -207,26 +274,9 @@ export default function ComputerAgentPage() {
           </pre>
         </div>
 
-        {/* Run command */}
-        <div>
-          <span style={LABEL}>2. run the agent (keep this terminal open)</span>
-          <pre style={{
-            ...MONO,
-            background: "var(--bg-canvas)",
-            border: "1px solid var(--stroke-1)",
-            borderRadius: "var(--r-2)",
-            padding: "10px 14px",
-            fontSize: 11,
-            color: "var(--fg-2)",
-            margin: 0,
-            overflowX: "auto",
-          }}>
-            {os === "windows" ? WIN_RUN_CMD(token) : RUN_CMD(token)}
-          </pre>
-          <p style={{ ...MONO, fontSize: 10, color: "var(--fg-4)", marginTop: 6, lineHeight: 1.6 }}>
-            listens on <code>127.0.0.1:3031</code> · shell log at <code>~/.openmlc-agent/shell.log</code>
-          </p>
-        </div>
+        <p style={{ ...MONO, fontSize: 10, color: "var(--fg-4)", lineHeight: 1.6 }}>
+          listens on <code>127.0.0.1:3031</code> · shell log at <code>~/.openmlc-agent/shell.log</code>
+        </p>
       </div>
 
       {/* ── Step 2: Connect ── */}

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { mouseClick, mouseDoubleClick, mouseMove, mouseScroll, mouseDrag } from "../platform/index.js";
+import { mouseClick, mouseDoubleClick, mouseMove, mouseScroll, mouseDrag, cursorPosition } from "../platform/index.js";
 
 export const mouseRouter = Router();
 
@@ -48,6 +48,15 @@ mouseRouter.post("/mouse/drag", async (req, res) => {
     const { fromX, fromY, toX, toY } = req.body;
     await mouseDrag(fromX, fromY, toX, toY);
     res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+mouseRouter.get("/mouse/position", async (_req, res) => {
+  try {
+    const pos = await cursorPosition();
+    res.json(pos);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

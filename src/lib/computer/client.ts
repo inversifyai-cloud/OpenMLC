@@ -177,3 +177,81 @@ export async function launchApp(token: string, app: string, args?: string[], bas
 export async function systemInfo(token: string, baseUrl?: string): Promise<Record<string, unknown>> {
   return getJson<Record<string, unknown>>(`${agentUrl(baseUrl)}/system/info`, token, 10_000);
 }
+
+// ── screenshot region + diff ──────────────────────────────────────────────────
+
+export async function screenshotRegion(
+  token: string, x: number, y: number, w: number, h: number, scale?: number, baseUrl?: string
+): Promise<ScreenshotResult> {
+  const url = new URL(`${agentUrl(baseUrl)}/screenshot/region`);
+  url.searchParams.set("x", String(x));
+  url.searchParams.set("y", String(y));
+  url.searchParams.set("w", String(w));
+  url.searchParams.set("h", String(h));
+  if (scale != null) url.searchParams.set("scale", String(scale));
+  return getJson<ScreenshotResult>(url.toString(), token, 15_000);
+}
+
+export type DiffResult = { image: string; changedRegions: Array<{ x: number; y: number; w: number; h: number }>; changePercent: number; note?: string };
+
+export async function screenshotDiff(token: string, baseUrl?: string): Promise<DiffResult> {
+  return getJson<DiffResult>(`${agentUrl(baseUrl)}/screenshot/diff`, token, 15_000);
+}
+
+// ── accessibility ─────────────────────────────────────────────────────────────
+
+export async function accessibilityTree(token: string, app?: string, maxDepth?: number, baseUrl?: string): Promise<{ tree: object }> {
+  const url = new URL(`${agentUrl(baseUrl)}/accessibility/tree`);
+  if (app) url.searchParams.set("app", app);
+  if (maxDepth != null) url.searchParams.set("max_depth", String(maxDepth));
+  return getJson<{ tree: object }>(url.toString(), token, 15_000);
+}
+
+// ── vision ────────────────────────────────────────────────────────────────────
+
+export type TextMatch = { text: string; x: number; y: number; width: number; height: number; confidence: number };
+
+export async function findText(
+  token: string, text: string,
+  region?: { x: number; y: number; width: number; height: number },
+  baseUrl?: string
+): Promise<{ matches: TextMatch[] }> {
+  const body: Record<string, unknown> = { text };
+  if (region) body.region = { x: region.x, y: region.y, w: region.width, h: region.height };
+  return postJson<{ matches: TextMatch[] }>(`${agentUrl(baseUrl)}/vision/find-text`, body, token, 30_000);
+}
+
+export type OcrResult = { blocks: Array<{ text: string; x: number; y: number; width: number; height: number }>; fullText: string };
+
+export async function ocrScreen(
+  token: string,
+  region?: { x: number; y: number; width: number; height: number },
+  baseUrl?: string
+): Promise<OcrResult> {
+  const url = new URL(`${agentUrl(baseUrl)}/vision/ocr`);
+  if (region) {
+    url.searchParams.set("x", String(region.x));
+    url.searchParams.set("y", String(region.y));
+    url.searchParams.set("w", String(region.width));
+    url.searchParams.set("h", String(region.height));
+  }
+  return getJson<OcrResult>(url.toString(), token, 30_000);
+}
+
+// ── scripting ─────────────────────────────────────────────────────────────────
+
+export type ScriptResult = { stdout: string; stderr: string; exitCode: number };
+
+export async function runScript(
+  token: string, script: string,
+  language: "jxa" | "applescript" | "powershell" | "python",
+  baseUrl?: string
+): Promise<ScriptResult> {
+  return postJson<ScriptResult>(`${agentUrl(baseUrl)}/script/run`, { script, language }, token, 35_000);
+}
+
+// ── cursor ────────────────────────────────────────────────────────────────────
+
+export async function cursorPosition(token: string, baseUrl?: string): Promise<{ x: number; y: number }> {
+  return getJson<{ x: number; y: number }>(`${agentUrl(baseUrl)}/mouse/position`, token, 5_000);
+}

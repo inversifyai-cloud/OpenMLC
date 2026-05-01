@@ -409,6 +409,166 @@ export const computerSystemInfoDefinition: ToolDefinition<"computer_system_info"
     }),
 };
 
+// ── screenshot region ─────────────────────────────────────────────────────────
+
+export const computerScreenshotRegionDefinition: ToolDefinition<"computer_screenshot_region"> = {
+  name: "computer_screenshot_region",
+  displayName: "Zoom Screenshot",
+  verb: "Zooming in",
+  isEnabled,
+  build: (ctx) =>
+    tool({
+      description: "Capture a zoomed-in screenshot of a specific region of the screen. Use this when you need to read small text or examine a specific UI area more closely. The returned image is scaled up (default 2x) for clarity.",
+      inputSchema: z.object({
+        x: z.number().describe("Left edge of the region in screen pixels"),
+        y: z.number().describe("Top edge of the region in screen pixels"),
+        width: z.number().describe("Width of the region in screen pixels"),
+        height: z.number().describe("Height of the region in screen pixels"),
+        scale: z.number().min(1).max(4).optional().describe("Zoom factor (default 2). Use 3-4 for very small UI elements."),
+      }),
+      execute: async ({ x, y, width, height, scale }) => {
+        const result = await agent.screenshotRegion(ctx.computerAgentToken!, x, y, width, height, scale, ctx.computerAgentUrl);
+        const ts = Date.now();
+        const path = await persistComputerScreenshot(ctx, ts, result.image);
+        return { screenshotPath: path ? `/${path}` : undefined, width: result.width, height: result.height };
+      },
+    }),
+};
+
+// ── accessibility tree ────────────────────────────────────────────────────────
+
+export const computerAccessibilityTreeDefinition: ToolDefinition<"computer_accessibility_tree"> = {
+  name: "computer_accessibility_tree",
+  displayName: "Accessibility Tree",
+  verb: "Reading UI elements",
+  isEnabled,
+  build: (ctx) =>
+    tool({
+      description: "Get the accessibility element tree of the frontmost app (or a named app). Returns a JSON tree of UI elements with their roles, labels, and screen coordinates. Use this to find buttons, inputs, and other elements by name rather than by pixel position. On macOS this uses the native Accessibility API.",
+      inputSchema: z.object({
+        app: z.string().optional().describe("App name to inspect (e.g. 'Safari', 'Finder'). Omit for the frontmost app."),
+        max_depth: z.number().min(1).max(8).optional().describe("How deep to walk the element tree (default 5)."),
+      }),
+      execute: async ({ app, max_depth }) => {
+        const result = await agent.accessibilityTree(ctx.computerAgentToken!, app, max_depth, ctx.computerAgentUrl);
+        return { tree: result.tree };
+      },
+    }),
+};
+
+// ── find text ─────────────────────────────────────────────────────────────────
+
+export const computerFindTextDefinition: ToolDefinition<"computer_find_text"> = {
+  name: "computer_find_text",
+  displayName: "Find Text",
+  verb: "Finding text on screen",
+  isEnabled,
+  build: (ctx) =>
+    tool({
+      description: "Locate text on the screen using OCR and return its pixel coordinates. Use this to find buttons, labels, or any text before clicking. Returns matches sorted by confidence. On macOS uses the native Vision framework; falls back to Tesseract on other platforms.",
+      inputSchema: z.object({
+        text: z.string().describe("Text to search for (case-insensitive, partial match)."),
+        region: z.object({
+          x: z.number(), y: z.number(), width: z.number(), height: z.number(),
+        }).optional().describe("Restrict search to this screen region (optional)."),
+      }),
+      execute: async ({ text, region }) => {
+        const result = await agent.findText(ctx.computerAgentToken!, text, region, ctx.computerAgentUrl);
+        const ts = Date.now();
+        const screenshotPath = await takeScreenshot(ctx).then(r => r.screenshotPath);
+        return { matches: result.matches, count: result.matches.length, screenshotPath };
+      },
+    }),
+};
+
+// ── ocr ───────────────────────────────────────────────────────────────────────
+
+export const computerOcrDefinition: ToolDefinition<"computer_ocr"> = {
+  name: "computer_ocr",
+  displayName: "OCR",
+  verb: "Reading screen text",
+  isEnabled,
+  build: (ctx) =>
+    tool({
+      description: "Extract all text from the screen (or a region) using OCR. Returns each text block with its position and the full text as a string. Use this to read dynamic content, error messages, or any text you need to process.",
+      inputSchema: z.object({
+        region: z.object({
+          x: z.number(), y: z.number(), width: z.number(), height: z.number(),
+        }).optional().describe("Restrict OCR to this screen region (optional, defaults to full screen)."),
+      }),
+      execute: async ({ region }) => {
+        const result = await agent.ocrScreen(ctx.computerAgentToken!, region, ctx.computerAgentUrl);
+        return { blocks: result.blocks, fullText: result.fullText, blockCount: result.blocks.length };
+      },
+    }),
+};
+
+// ── screen diff ───────────────────────────────────────────────────────────────
+
+export const computerScreenDiffDefinition: ToolDefinition<"computer_screen_diff"> = {
+  name: "computer_screen_diff",
+  displayName: "Screen Diff",
+  verb: "Checking what changed",
+  isEnabled,
+  build: (ctx) =>
+    tool({
+      description: "Take a screenshot and compare it to the previous one to see what changed. Use this after mouse or keyboard actions to verify the action had an effect. Returns changePercent — if it's near 0%, the action likely didn't register.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const result = await agent.screenshotDiff(ctx.computerAgentToken!, ctx.computerAgentUrl);
+        const ts = Date.now();
+        const path = await persistComputerScreenshot(ctx, ts, result.image);
+        return {
+          screenshotPath: path ? `/${path}` : undefined,
+          changePercent: result.changePercent,
+          changedRegions: result.changedRegions,
+          note: result.note,
+        };
+      },
+    }),
+};
+
+// ── run script ────────────────────────────────────────────────────────────────
+
+export const computerRunScriptDefinition: ToolDefinition<"computer_run_script"> = {
+  name: "computer_run_script",
+  displayName: "Run Script",
+  verb: "Running script",
+  isEnabled,
+  build: (ctx) =>
+    tool({
+      description: "Run a script on the host machine. Use 'jxa' (JavaScript for Automation) or 'applescript' on macOS to control apps via their native API — far more reliable than pixel clicking for complex automation. Use 'python' for cross-platform scripting. 'powershell' on Windows. Returns stdout, stderr, and exit code.",
+      inputSchema: z.object({
+        script: z.string().describe("The script content to execute."),
+        language: z.enum(["jxa", "applescript", "powershell", "python"]).describe("Script language. Use 'jxa' on macOS for native app control (Safari, Finder, etc)."),
+      }),
+      execute: async ({ script, language }) => {
+        const result = await agent.runScript(ctx.computerAgentToken!, script, language, ctx.computerAgentUrl);
+        const stdout = result.stdout.slice(0, 8192);
+        const stderr = result.stderr.slice(0, 2048);
+        return { stdout, stderr, exitCode: result.exitCode, success: result.exitCode === 0 };
+      },
+    }),
+};
+
+// ── cursor position ───────────────────────────────────────────────────────────
+
+export const computerCursorPositionDefinition: ToolDefinition<"computer_cursor_position"> = {
+  name: "computer_cursor_position",
+  displayName: "Cursor Position",
+  verb: "Getting cursor position",
+  isEnabled,
+  build: (ctx) =>
+    tool({
+      description: "Get the current mouse cursor position in screen coordinates. Useful for debugging hover states or confirming where the cursor is before a click.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const pos = await agent.cursorPosition(ctx.computerAgentToken!, ctx.computerAgentUrl);
+        return { x: pos.x, y: pos.y };
+      },
+    }),
+};
+
 // ── registry ──────────────────────────────────────────────────────────────────
 
 export const computerDefinitions: ToolDefinition[] = [
@@ -429,6 +589,13 @@ export const computerDefinitions: ToolDefinition[] = [
   computerClipboardWriteDefinition,
   computerLaunchAppDefinition,
   computerSystemInfoDefinition,
+  computerScreenshotRegionDefinition,
+  computerAccessibilityTreeDefinition,
+  computerFindTextDefinition,
+  computerOcrDefinition,
+  computerScreenDiffDefinition,
+  computerRunScriptDefinition,
+  computerCursorPositionDefinition,
 ];
 
 export const COMPUTER_TOOL_NAMES: ToolName[] = computerDefinitions.map((d) => d.name);

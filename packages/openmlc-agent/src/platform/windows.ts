@@ -1,6 +1,6 @@
 import { execFile, exec } from "child_process";
 import { promisify } from "util";
-import { readFile, unlink } from "fs/promises";
+import { readFile, writeFile, unlink } from "fs/promises";
 import { tmpdir, homedir } from "os";
 import { join } from "path";
 
@@ -126,4 +126,171 @@ export async function focusWindow(title?: string, _pid?: number): Promise<void> 
     if ($h -ne [IntPtr]::Zero) { [Native.W]::SetForegroundWindow($h) }
   `;
   await execP(`powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`).catch(() => {});
+}
+
+// ── new capabilities ──────────────────────────────────────────────────────────
+
+export async function screenshotRaw(): Promise<Buffer> {
+  const { image } = await screenshot();
+  return Buffer.from(image, "base64");
+}
+
+export async function screenshotRegion(
+  x: number, y: number, w: number, h: number, scale = 2
+): Promise<{ image: string; width: number; height: number }> {
+  const path = join(tmpdir(), `openmlc-region-${Date.now()}.png`).replace(/\\/g, "\\\\");
+  const scaledW = Math.round(w * scale), scaledH = Math.round(h * scale);
+  const ps = `
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+    $bmp = New-Object System.Drawing.Bitmap(${w}, ${h})
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.CopyFromScreen(${x}, ${y}, 0, 0, New-Object System.Drawing.Size(${w}, ${h}))
+    $scaled = New-Object System.Drawing.Bitmap($bmp, ${scaledW}, ${scaledH})
+    $scaled.Save('${path}')
+  `;
+  await execP(`powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`);
+  const buf = await readFile(path.replace(/\\\\/g, "\\"));
+  await unlink(path.replace(/\\\\/g, "\\")).catch(() => {});
+  return { image: buf.toString("base64"), width: scaledW, height: scaledH };
+}
+
+export async function cursorPosition(): Promise<{ x: number; y: number }> {
+  const ps = `Add-Type -AssemblyName System.Windows.Forms; $p = [System.Windows.Forms.Cursor]::Position; Write-Output "$($p.X),$($p.Y)"`;
+  const { stdout } = await execP(`powershell -NoProfile -Command "${ps}"`);
+  const m = stdout.trim().match(/(\d+),(\d+)/);
+  if (!m) throw new Error("Could not parse cursor position");
+  return { x: parseInt(m[1]), y: parseInt(m[2]) };
+}
+
+export async function accessibilityTree(app?: string, maxDepth = 5): Promise<object> {
+  const ps = `
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+function Walk($el, $depth) {
+  if ($depth -le 0) { return $null }
+  $props = @{}
+  try { $props.role = $el.Current.ControlType.ProgrammaticName } catch {}
+  try { $props.title = $el.Current.Name } catch {}
+  try { $props.description = $el.Current.HelpText } catch {}
+  try { $props.enabled = $el.Current.IsEnabled } catch {}
+  try {
+    $r = $el.Current.BoundingRectangle
+    $props.frame = @{x=[int]$r.X; y=[int]$r.Y; width=[int]$r.Width; height=[int]$r.Height}
+  } catch {}
+  $kids = @()
+  try {
+    $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+    $child = $walker.GetFirstChild($el)
+    $count = 0
+    while ($child -ne $null -and $count -lt 40) {
+      $node = Walk $child ($depth - 1)
+      if ($node -ne $null) { $kids += $node }
+      $child = $walker.GetNextSibling($child)
+      $count++
+    }
+  } catch {}
+  if ($kids.Count -gt 0) { $props.children = $kids }
+  return $props
+}
+$root = [System.Windows.Automation.AutomationElement]::RootElement
+$target = ${app ? `'${app.replace(/'/g, "''")}'` : '$null'}
+$results = @()
+$walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+$win = $walker.GetFirstChild($root)
+while ($win -ne $null) {
+  $name = ''
+  try { $name = $win.Current.Name } catch {}
+  if ($target -eq $null -or $name -like "*$target*") {
+    $node = Walk $win ${maxDepth}
+    if ($node -ne $null) { $results += $node }
+  }
+  $win = $walker.GetNextSibling($win)
+}
+ConvertTo-Json @{windows=$results} -Depth 10 -Compress
+`;
+  const tmp = join(tmpdir(), `openmlc-uia-${Date.now()}.ps1`);
+  await writeFile(tmp, ps, "utf8");
+  try {
+    const { stdout } = await execP(`powershell -NoProfile -File "${tmp}"`, { timeout: 15000 });
+    return JSON.parse(stdout.trim());
+  } catch (err: any) {
+    return { error: err.message };
+  } finally {
+    await unlink(tmp).catch(() => {});
+  }
+}
+
+export async function ocrScreen(region?: { x: number; y: number; w: number; h: number }): Promise<{ blocks: Array<{ text: string; x: number; y: number; width: number; height: number }>; fullText: string }> {
+  const shotPath = join(tmpdir(), `openmlc-ocr-${Date.now()}.png`).replace(/\\/g, "\\\\");
+  const { image } = region
+    ? await screenshotRegion(region.x, region.y, region.w, region.h, 1)
+    : await screenshot();
+  await writeFile(shotPath.replace(/\\\\/g, "\\"), Buffer.from(image, "base64"));
+
+  const ps = `
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$null = [Windows.Storage.StorageFile, Windows.Storage, ContentType = WindowsRuntime]
+$null = [Windows.Media.Ocr.OcrEngine, Windows.Foundation, ContentType = WindowsRuntime]
+function Await($task) { $task.GetAwaiter().GetResult() }
+$file = Await([Windows.Storage.StorageFile]::GetFileFromPathAsync('${shotPath.replace(/\\\\/g, "\\\\\\\\")}'))
+$stream = Await($file.OpenAsync([Windows.Storage.FileAccessMode]::Read))
+$bmp = Await([Windows.Graphics.Imaging.BitmapDecoder]::CreateAsync($stream))
+$sb = Await($bmp.GetSoftwareBitmapAsync())
+$eng = [Windows.Media.Ocr.OcrEngine]::TryCreateFromUserProfileLanguages()
+$result = Await($eng.RecognizeAsync($sb))
+$out = @()
+foreach ($line in $result.Lines) {
+  foreach ($word in $line.Words) {
+    $b = $word.BoundingRect
+    $out += @{text=$word.Text; x=[int]$b.X; y=[int]$b.Y; width=[int]$b.Width; height=[int]$b.Height}
+  }
+}
+ConvertTo-Json @{blocks=$out; fullText=$result.Text} -Compress
+`;
+  const ox = region?.x ?? 0, oy = region?.y ?? 0;
+  try {
+    const { stdout } = await execP(`powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`, { timeout: 20000 });
+    const parsed = JSON.parse(stdout.trim());
+    const blocks = (parsed.blocks ?? []).map((b: any) => ({ text: b.text, x: b.x + ox, y: b.y + oy, width: b.width, height: b.height }));
+    return { blocks, fullText: parsed.fullText ?? blocks.map((b: any) => b.text).join(" ") };
+  } catch {
+    return { blocks: [], fullText: "" };
+  } finally {
+    await unlink(shotPath.replace(/\\\\/g, "\\")).catch(() => {});
+  }
+}
+
+export async function findText(
+  text: string,
+  region?: { x: number; y: number; w: number; h: number }
+): Promise<Array<{ text: string; x: number; y: number; width: number; height: number; confidence: number }>> {
+  const { blocks } = await ocrScreen(region);
+  const lower = text.toLowerCase();
+  return blocks
+    .filter(b => b.text.toLowerCase().includes(lower))
+    .map(b => ({ ...b, confidence: 0.9 }));
+}
+
+export async function runScript(
+  script: string,
+  language: "jxa" | "applescript" | "powershell" | "python"
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  if (language === "jxa" || language === "applescript") {
+    return { stdout: "", stderr: `${language} is not supported on Windows`, exitCode: 1 };
+  }
+  const ext = language === "python" ? "py" : "ps1";
+  const tmp = join(tmpdir(), `openmlc-script-${Date.now()}.${ext}`);
+  await writeFile(tmp, script, "utf8");
+  let stdout = "", stderr = "", exitCode = 0;
+  try {
+    const cmd = language === "python" ? `python "${tmp}"` : `powershell -NoProfile -File "${tmp}"`;
+    const r = await execP(cmd, { timeout: 30000 });
+    stdout = r.stdout; stderr = r.stderr ?? "";
+  } catch (err: any) {
+    stdout = err.stdout ?? ""; stderr = err.stderr ?? err.message; exitCode = err.code ?? 1;
+  } finally {
+    await unlink(tmp).catch(() => {});
+  }
+  return { stdout, stderr, exitCode };
 }

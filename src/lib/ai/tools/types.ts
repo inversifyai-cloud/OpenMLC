@@ -35,7 +35,14 @@ export type ToolName =
   | "computer_clipboard_read"
   | "computer_clipboard_write"
   | "computer_launch_app"
-  | "computer_system_info";
+  | "computer_system_info"
+  | "computer_screenshot_region"
+  | "computer_accessibility_tree"
+  | "computer_find_text"
+  | "computer_ocr"
+  | "computer_screen_diff"
+  | "computer_run_script"
+  | "computer_cursor_position";
 
 export interface ToolContext {
   profileId: string;

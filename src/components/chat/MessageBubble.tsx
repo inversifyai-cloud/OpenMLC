@@ -82,8 +82,15 @@ const TOOL_LABELS: Record<string, string> = {
   computer_file_delete:     "computer → delete file",
   computer_clipboard_read:  "computer → clipboard read",
   computer_clipboard_write: "computer → clipboard write",
-  computer_launch_app:      "computer → launch app",
-  computer_system_info:     "computer → system info",
+  computer_launch_app:           "computer → launch app",
+  computer_system_info:          "computer → system info",
+  computer_screenshot_region:    "computer → zoom screenshot",
+  computer_accessibility_tree:   "computer → accessibility tree",
+  computer_find_text:            "computer → find text",
+  computer_ocr:                  "computer → ocr",
+  computer_screen_diff:          "computer → screen diff",
+  computer_run_script:           "computer → run script",
+  computer_cursor_position:      "computer → cursor position",
 };
 
 function resolveToolName(part: ToolPart): string {
@@ -300,37 +307,46 @@ function BrowserToolOutput({ output, rawName }: { output: unknown; rawName: stri
 function ComputerToolOutput({ output, rawName }: { output: unknown; rawName: string }) {
   const o = typeof output === "object" && output ? (output as Record<string, unknown>) : {};
   const screenshotPath = typeof o.screenshotPath === "string" ? o.screenshotPath : null;
-  const isBash = rawName === "computer_bash";
+  const isScript = rawName === "computer_bash" || rawName === "computer_run_script";
   const stdout = typeof o.stdout === "string" ? o.stdout : null;
   const stderr = typeof o.stderr === "string" ? o.stderr : null;
   const exitCode = typeof o.exitCode === "number" ? o.exitCode : null;
   const content = typeof o.content === "string" ? o.content : null;
   const entries = Array.isArray(o.entries) ? (o.entries as Array<{ name: string; type: string; size: number }>) : null;
   const text = typeof o.text === "string" ? o.text : null;
+
+  // New tool outputs
+  const changePercent = typeof o.changePercent === "number" ? o.changePercent : null;
+  const matches = Array.isArray(o.matches) ? (o.matches as Array<{ text: string; x: number; y: number; width: number; height: number; confidence: number }>) : null;
+  const blocks = Array.isArray(o.blocks) ? (o.blocks as Array<{ text: string; x: number; y: number }>) : null;
+  const fullText = typeof o.fullText === "string" ? o.fullText : null;
+  const tree = o.tree != null ? o.tree : null;
+  const cursorX = typeof o.x === "number" ? o.x : null;
+  const cursorY = typeof o.y === "number" ? o.y : null;
+
   const action = rawName.replace(/^computer_/, "");
+  const PRE: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.5, maxHeight: 240, overflow: "auto", background: "var(--bg-canvas)", padding: 8, borderRadius: "var(--r-2)", border: "1px solid var(--stroke-1)", marginTop: 4 };
+
   return (
     <div>
       {screenshotPath && (
         <div style={{ marginBottom: 6, border: "1px solid var(--stroke-2)", borderRadius: "var(--r-2)", overflow: "hidden", background: "var(--bg-canvas)" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={screenshotPath}
-            alt={`computer ${action} screenshot`}
-            style={{ display: "block", width: "100%", maxHeight: 400, objectFit: "contain" }}
-          />
+          <img src={screenshotPath} alt={`computer ${action}`} style={{ display: "block", width: "100%", maxHeight: 400, objectFit: "contain" }} />
         </div>
       )}
-      {isBash && (stdout !== null || stderr !== null) && (
-        <pre style={{ marginTop: 4, fontFamily: "var(--font-mono)", fontSize: 11, color: exitCode === 0 ? "var(--fg-2)" : "var(--signal-err)", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.5, maxHeight: 240, overflow: "auto", background: "var(--bg-canvas)", padding: 8, borderRadius: "var(--r-2)", border: "1px solid var(--stroke-1)" }}>
+      {changePercent !== null && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: changePercent < 1 ? "var(--signal-err)" : "var(--green-500)", marginTop: 4 }}>
+          {changePercent < 1 ? "no change detected" : `${changePercent}% of screen changed`}
+        </div>
+      )}
+      {isScript && (stdout !== null || stderr !== null) && (
+        <pre style={{ ...PRE, color: exitCode === 0 ? "var(--fg-2)" : "var(--signal-err)" }}>
           {stdout ? stdout.slice(0, 8000) : ""}
           {stderr ? `\n[stderr]\n${stderr.slice(0, 2000)}` : ""}
         </pre>
       )}
-      {content !== null && (
-        <pre style={{ marginTop: 4, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.5, maxHeight: 240, overflow: "auto", background: "var(--bg-canvas)", padding: 8, borderRadius: "var(--r-2)", border: "1px solid var(--stroke-1)" }}>
-          {content.slice(0, 8000)}
-        </pre>
-      )}
+      {content !== null && <pre style={PRE}>{content.slice(0, 8000)}</pre>}
       {entries !== null && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
           {entries.slice(0, 50).map((e, i) => (
@@ -341,12 +357,39 @@ function ComputerToolOutput({ output, rawName }: { output: unknown; rawName: str
           {entries.length > 50 && <span style={{ color: "var(--fg-4)" }}>+{entries.length - 50} more</span>}
         </div>
       )}
+      {matches !== null && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, marginTop: 4 }}>
+          {matches.length === 0
+            ? <span style={{ color: "var(--fg-4)" }}>no matches found</span>
+            : matches.slice(0, 10).map((m, i) => (
+                <div key={i} style={{ color: "var(--fg-2)", marginBottom: 2 }}>
+                  <span style={{ color: "var(--fg-accent)" }}>&ldquo;{m.text}&rdquo;</span>
+                  {" "}at ({m.x}, {m.y}) — {Math.round(m.confidence * 100)}% confidence
+                </div>
+              ))
+          }
+        </div>
+      )}
+      {fullText !== null && blocks !== null && (
+        <div style={{ marginTop: 4 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", marginBottom: 4 }}>{blocks.length} text blocks found</div>
+          <pre style={PRE}>{fullText.slice(0, 4000)}</pre>
+        </div>
+      )}
+      {tree !== null && (
+        <pre style={{ ...PRE, maxHeight: 320, fontSize: 10 }}>{JSON.stringify(tree, null, 2).slice(0, 12000)}</pre>
+      )}
+      {cursorX !== null && cursorY !== null && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", marginTop: 4 }}>
+          cursor at ({cursorX}, {cursorY})
+        </div>
+      )}
       {text !== null && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", marginTop: 4 }}>
           {text.slice(0, 200)}
         </div>
       )}
-      {!screenshotPath && !isBash && content === null && entries === null && text === null && (
+      {!screenshotPath && !isScript && !matches && !blocks && !tree && cursorX === null && changePercent === null && content === null && entries === null && text === null && (
         <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--fg-4)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{action}</div>
       )}
     </div>
