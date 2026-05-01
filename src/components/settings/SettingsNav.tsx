@@ -13,6 +13,7 @@ const NAV_SECTIONS: Section[] = [
       { href: "/settings/profile", label: "profile", hint: "name, monogram, theme" },
       { href: "/settings/api-keys", label: "api keys", hint: "openai, anthropic, etc." },
       { href: "/settings/custom-providers", label: "custom providers", hint: "openai-compatible endpoints" },
+      { href: "/settings/ollama", label: "local models", hint: "install ollama models" },
     ],
   },
   {
