@@ -39,6 +39,8 @@ ENV DATABASE_URL="file:/tmp/build.db"
 
 RUN npx prisma generate --schema=./prisma/schema.prisma
 RUN npm run build
+# Build the host agent binary (single bundled JS, served as download)
+RUN cd packages/openmlc-agent && npm ci --no-audit --no-fund && npm run build
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 3 — runtime: minimal image, only standalone bundle + native runtime deps
@@ -72,6 +74,7 @@ COPY --from=build --chown=nextjs:nodejs /app/next.config.ts ./next.config.ts
 COPY --from=build --chown=nextjs:nodejs /app/prisma            ./prisma
 COPY --from=build --chown=nextjs:nodejs /app/prisma.config.ts  ./prisma.config.ts
 COPY --from=build --chown=nextjs:nodejs /app/node_modules  ./node_modules
+COPY --from=build --chown=nextjs:nodejs /app/packages/openmlc-agent/dist/index.js ./agent/openmlc-agent.js
 
 # Persisted volume for SQLite + uploads
 RUN mkdir -p /data /app/uploads && chown -R nextjs:nodejs /data /app/uploads
