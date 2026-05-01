@@ -67,6 +67,23 @@ const TOOL_LABELS: Record<string, string> = {
   browser_back:     "browser → back",
   browser_forward:  "browser → forward",
   browser_extract:  "browser → extract",
+  computer_screenshot:      "computer → screenshot",
+  computer_click:           "computer → click",
+  computer_double_click:    "computer → double click",
+  computer_move:            "computer → move",
+  computer_scroll:          "computer → scroll",
+  computer_drag:            "computer → drag",
+  computer_type:            "computer → type",
+  computer_key:             "computer → key",
+  computer_bash:            "computer → shell",
+  computer_file_read:       "computer → read file",
+  computer_file_write:      "computer → write file",
+  computer_file_list:       "computer → list files",
+  computer_file_delete:     "computer → delete file",
+  computer_clipboard_read:  "computer → clipboard read",
+  computer_clipboard_write: "computer → clipboard write",
+  computer_launch_app:      "computer → launch app",
+  computer_system_info:     "computer → system info",
 };
 
 function resolveToolName(part: ToolPart): string {
@@ -280,6 +297,62 @@ function BrowserToolOutput({ output, rawName }: { output: unknown; rawName: stri
   );
 }
 
+function ComputerToolOutput({ output, rawName }: { output: unknown; rawName: string }) {
+  const o = typeof output === "object" && output ? (output as Record<string, unknown>) : {};
+  const screenshotPath = typeof o.screenshotPath === "string" ? o.screenshotPath : null;
+  const isBash = rawName === "computer_bash";
+  const stdout = typeof o.stdout === "string" ? o.stdout : null;
+  const stderr = typeof o.stderr === "string" ? o.stderr : null;
+  const exitCode = typeof o.exitCode === "number" ? o.exitCode : null;
+  const content = typeof o.content === "string" ? o.content : null;
+  const entries = Array.isArray(o.entries) ? (o.entries as Array<{ name: string; type: string; size: number }>) : null;
+  const text = typeof o.text === "string" ? o.text : null;
+  const action = rawName.replace(/^computer_/, "");
+  return (
+    <div>
+      {screenshotPath && (
+        <div style={{ marginBottom: 6, border: "1px solid var(--stroke-2)", borderRadius: "var(--r-2)", overflow: "hidden", background: "var(--bg-canvas)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={screenshotPath}
+            alt={`computer ${action} screenshot`}
+            style={{ display: "block", width: "100%", maxHeight: 400, objectFit: "contain" }}
+          />
+        </div>
+      )}
+      {isBash && (stdout !== null || stderr !== null) && (
+        <pre style={{ marginTop: 4, fontFamily: "var(--font-mono)", fontSize: 11, color: exitCode === 0 ? "var(--fg-2)" : "var(--signal-err)", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.5, maxHeight: 240, overflow: "auto", background: "var(--bg-canvas)", padding: 8, borderRadius: "var(--r-2)", border: "1px solid var(--stroke-1)" }}>
+          {stdout ? stdout.slice(0, 8000) : ""}
+          {stderr ? `\n[stderr]\n${stderr.slice(0, 2000)}` : ""}
+        </pre>
+      )}
+      {content !== null && (
+        <pre style={{ marginTop: 4, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.5, maxHeight: 240, overflow: "auto", background: "var(--bg-canvas)", padding: 8, borderRadius: "var(--r-2)", border: "1px solid var(--stroke-1)" }}>
+          {content.slice(0, 8000)}
+        </pre>
+      )}
+      {entries !== null && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+          {entries.slice(0, 50).map((e, i) => (
+            <span key={i} style={{ color: e.type === "directory" ? "var(--fg-accent)" : "var(--fg-3)", background: "var(--bg-canvas)", border: "1px solid var(--stroke-1)", borderRadius: "var(--r-1)", padding: "2px 6px" }}>
+              {e.type === "directory" ? "/" : ""}{e.name}
+            </span>
+          ))}
+          {entries.length > 50 && <span style={{ color: "var(--fg-4)" }}>+{entries.length - 50} more</span>}
+        </div>
+      )}
+      {text !== null && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-2)", marginTop: 4 }}>
+          {text.slice(0, 200)}
+        </div>
+      )}
+      {!screenshotPath && !isBash && content === null && entries === null && text === null && (
+        <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--fg-4)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{action}</div>
+      )}
+    </div>
+  );
+}
+
 function ImageGenOutput({ output }: { output: unknown }) {
   const data = output as { url?: string; prompt?: string; attachmentId?: string } | null;
   if (!data?.url) return <GenericToolOutput output={output} />;
@@ -404,6 +477,8 @@ function ToolNode({ part, streaming }: { part: ToolPart; streaming?: boolean }) 
       default:
         if (rawName.startsWith("browser_")) {
           body = <BrowserToolOutput output={part.output} rawName={rawName} />;
+        } else if (rawName.startsWith("computer_")) {
+          body = <ComputerToolOutput output={part.output} rawName={rawName} />;
         } else {
           body = <GenericToolOutput output={part.output} />;
         }

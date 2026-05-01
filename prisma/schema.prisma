@@ -12,6 +12,8 @@ model Settings {
   profileCreationLocked Boolean  @default(false)
   swarmEnabled          Boolean  @default(true)
   codeSandboxEnabled    Boolean  @default(false)
+  computerAgentUrl      String?
+  computerAgentToken    String?
   updatedAt             DateTime @updatedAt
 }
 

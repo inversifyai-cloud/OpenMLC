@@ -56,6 +56,14 @@ services:
       OPENMLC_BROWSER_ENABLED: "${OPENMLC_BROWSER_ENABLED:-false}"
       # Point at the ollama sidecar. Override if you run Ollama externally.
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434/v1}"
+      # openmlc-agent: runs natively on your host machine (not in Docker).
+      # Mac: host.docker.internal resolves automatically.
+      # Linux: use 172.17.0.1 or set OPENMLC_COMPUTER_URL explicitly.
+      OPENMLC_COMPUTER_URL: "${OPENMLC_COMPUTER_URL:-http://host.docker.internal:3031}"
+      OPENMLC_COMPUTER_TOKEN: "${OPENMLC_COMPUTER_TOKEN:-}"
+    extra_hosts:
+      # Allows Docker containers to reach the host machine on Linux.
+      - "host.docker.internal:host-gateway"
     volumes:
       - openmlc-data:/data
       - openmlc-uploads:/app/uploads

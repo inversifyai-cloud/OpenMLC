@@ -33,6 +33,7 @@ const bodySchema = z.object({
   knowledgeBaseEnabled: z.boolean().optional(),
   researchMode: z.boolean().optional(),
   browserMode: z.boolean().optional(),
+  computerMode: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
     knowledgeBaseEnabled = true,
     researchMode = false,
     browserMode = false,
+    computerMode = false,
   } = parsed.data;
   const uiMessages = messages as UIMessage[];
 
@@ -222,6 +224,8 @@ export async function POST(req: Request) {
   const tavilyKey = process.env.TAVILY_API_KEY ?? undefined;
   const openaiResolved = await resolveProviderKey(profileId, "openai");
   const settings = await getSettings();
+  const computerAgentUrl = settings.computerAgentUrl ?? process.env.OPENMLC_COMPUTER_URL ?? undefined;
+  const computerAgentToken = settings.computerAgentToken ?? process.env.OPENMLC_COMPUTER_TOKEN ?? undefined;
   const toolCtx: ToolContext = {
     profileId,
     conversationId,
@@ -231,6 +235,8 @@ export async function POST(req: Request) {
       tavily: tavilyKey,
     },
     sandboxEnabled: settings.codeSandboxEnabled,
+    computerAgentUrl: computerMode ? computerAgentUrl : undefined,
+    computerAgentToken: computerMode ? computerAgentToken : undefined,
   };
   const { tools: builtinTools, enabledNames, connectorProviders } = await buildToolsForRequest({
     model,
@@ -295,6 +301,7 @@ export async function POST(req: Request) {
     memoryBlock,
     researchPrompt: researchMode ? RESEARCH_PROMPT : null,
     browserEnabled: browserSidecarEnabled,
+    computerEnabled: computerMode && !!computerAgentUrl,
   });
   const ragBlock = ragContext
     ? `\n\n[knowledge base context — relevant excerpts from the user's uploaded documents:\n${ragContext}\n]\nWhen using these excerpts, cite the source filename inline.`

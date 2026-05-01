@@ -18,7 +18,24 @@ export type ToolName =
   | "browser_scroll"
   | "browser_back"
   | "browser_forward"
-  | "browser_extract";
+  | "browser_extract"
+  | "computer_screenshot"
+  | "computer_click"
+  | "computer_double_click"
+  | "computer_move"
+  | "computer_scroll"
+  | "computer_drag"
+  | "computer_type"
+  | "computer_key"
+  | "computer_bash"
+  | "computer_file_read"
+  | "computer_file_write"
+  | "computer_file_list"
+  | "computer_file_delete"
+  | "computer_clipboard_read"
+  | "computer_clipboard_write"
+  | "computer_launch_app"
+  | "computer_system_info";
 
 export interface ToolContext {
   profileId: string;
@@ -30,6 +47,8 @@ export interface ToolContext {
     tavily?: string;
   };
   sandboxEnabled?: boolean;
+  computerAgentUrl?: string;
+  computerAgentToken?: string;
 }
 
 export interface UserPrefsSlice {

@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 const patchSchema = z.object({
   codeSandboxEnabled: z.boolean().optional(),
   swarmEnabled: z.boolean().optional(),
+  computerAgentUrl: z.string().url().nullish(),
+  computerAgentToken: z.string().nullish(),
 });
 
 export async function GET() {
@@ -19,6 +21,8 @@ export async function GET() {
   return NextResponse.json({
     codeSandboxEnabled: settings.codeSandboxEnabled,
     swarmEnabled: settings.swarmEnabled,
+    computerAgentUrl: settings.computerAgentUrl ?? null,
+    hasComputerAgentToken: !!settings.computerAgentToken,
   });
 }
 
@@ -38,5 +42,7 @@ export async function PATCH(req: Request) {
   return NextResponse.json({
     codeSandboxEnabled: settings.codeSandboxEnabled,
     swarmEnabled: settings.swarmEnabled,
+    computerAgentUrl: settings.computerAgentUrl ?? null,
+    hasComputerAgentToken: !!settings.computerAgentToken,
   });
 }

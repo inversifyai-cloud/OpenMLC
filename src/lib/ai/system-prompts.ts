@@ -98,16 +98,33 @@ export const BROWSER_PROMPT = `
 
 You have a sandboxed browser available via browser_* tools. Use it for tasks that require seeing or interacting with live web pages. Always start with browser_navigate. Take screenshots into account when deciding what to click; coordinates are in the screenshot's pixel space (1280x800). Prefer browser_extract for grabbing text without re-screenshotting.`;
 
+export const COMPUTER_PROMPT = `
+
+## Computer agent tools
+
+You have full control of the user's host machine via computer_* tools. Use them when the user asks you to interact with apps, manage files, run commands, or control the desktop.
+
+Rules:
+- Always call computer_screenshot first to see the current screen state before clicking or typing.
+- After any mouse or keyboard action, call computer_screenshot to verify the result.
+- Use computer_bash for any task that can be done in a terminal — it's faster and more reliable than visual interaction.
+- Ask the user before deleting files, killing processes, or running commands with irreversible effects.
+- Prefer reading a file with computer_file_read over parsing a screenshot of its contents.`;
+
 export function composeSystemPrompt(opts: {
   conversationPrompt?: string | null;
   personaPrompt?: string | null;
   memoryBlock?: string | null;
   researchPrompt?: string | null;
   browserEnabled?: boolean;
+  computerEnabled?: boolean;
 } = {}): string {
   let out = BASE_SYSTEM_PROMPT + ARTIFACTS_PROMPT + getCurrentDateContext();
   if (opts.browserEnabled) {
     out += BROWSER_PROMPT;
+  }
+  if (opts.computerEnabled) {
+    out += COMPUTER_PROMPT;
   }
   if (opts.researchPrompt) {
     out = `${opts.researchPrompt}\n\n${out}`;

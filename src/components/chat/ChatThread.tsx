@@ -68,6 +68,8 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
   const [researchMode, setResearchMode] = useState(false);
   const [browserMode, setBrowserMode] = useState(false);
   const [browserAvailable, setBrowserAvailable] = useState(false);
+  const [computerMode, setComputerMode] = useState(false);
+  const [computerAvailable, setComputerAvailable] = useState(false);
   const [artifacts, setArtifacts] = useState<ArtifactData[]>([]);
   const [openArtifact, setOpenArtifact] = useState<ArtifactRef | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -172,12 +174,21 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
   const browserModeRef = useRef(false);
   useEffect(() => { browserModeRef.current = browserMode; }, [browserMode]);
 
+  const computerModeRef = useRef(false);
+  useEffect(() => { computerModeRef.current = computerMode; }, [computerMode]);
+
   useEffect(() => {
     let cancelled = false;
     fetch("/api/browser/status")
       .then((r) => r.ok ? r.json() : { available: false })
       .then((d: { available?: boolean }) => {
         if (!cancelled) setBrowserAvailable(!!d.available);
+      })
+      .catch(() => {});
+    fetch("/api/computer/status")
+      .then((r) => r.ok ? r.json() : { available: false })
+      .then((d: { available?: boolean }) => {
+        if (!cancelled) setComputerAvailable(!!d.available);
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -216,6 +227,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
           reasoningEffort: reasoningEffortRef.current,
           researchMode: researchModeRef.current,
           browserMode: browserModeRef.current,
+          computerMode: computerModeRef.current,
         },
       }),
     });
@@ -843,6 +855,9 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
           browserMode={browserMode}
           onBrowserToggle={setBrowserMode}
           browserAvailable={browserAvailable}
+          computerMode={computerMode}
+          onComputerToggle={setComputerMode}
+          computerAvailable={computerAvailable}
           conversationId={conversationId}
           personaId={personaId}
           onPersonaChange={setPersonaId}

@@ -31,3 +31,11 @@ export async function setCodeSandboxEnabled(enabled: boolean) {
     create: { id: "singleton", codeSandboxEnabled: enabled },
   });
 }
+
+export async function setComputerAgent(url: string | null, token: string | null) {
+  return db.settings.upsert({
+    where: { id: "singleton" },
+    update: { computerAgentUrl: url, computerAgentToken: token },
+    create: { id: "singleton", computerAgentUrl: url, computerAgentToken: token },
+  });
+}

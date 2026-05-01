@@ -14,6 +14,7 @@ import { imageGenDefinition } from "./image-gen";
 import { rememberDefinition } from "./remember";
 import { researchNoteDefinition } from "./research-note";
 import { browserDefinitions } from "./browser";
+import { computerDefinitions } from "./computer";
 import { db } from "@/lib/db";
 import { getConnector } from "@/lib/connectors";
 import { refreshIfExpired } from "@/lib/connectors/refresh";
@@ -27,6 +28,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   rememberDefinition,
   researchNoteDefinition,
   ...browserDefinitions,
+  ...computerDefinitions,
 ];
 
 export async function buildToolsForRequest(params: {
@@ -116,6 +118,11 @@ export function toolsSystemPromptHint(names: ToolName[], connectorProviders: str
   if (names.includes("research_note")) {
     parts.push(
       "- research_note: only useful in research mode. call kind='source' for each web result you intend to cite — it returns the citation index [N]. call kind='note' to record partial findings or drafts. outside of research mode this is a no-op; do not call it."
+    );
+  }
+  if (names.some((n) => n.startsWith("computer_"))) {
+    parts.push(
+      "- computer_*: you control the host machine. always call computer_screenshot first to see the screen before clicking. after mouse/keyboard actions call computer_screenshot to verify. use computer_bash for terminal tasks — faster and more reliable than visual interaction. always ask before deleting files or killing processes."
     );
   }
   if (connectorProviders.length > 0) {

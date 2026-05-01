@@ -32,6 +32,7 @@ const NAV_SECTIONS: Section[] = [
       { href: "/settings/connectors", label: "connectors", hint: "github, gmail, …" },
       { href: "/settings/mcp", label: "mcp servers", hint: "external tool servers" },
       { href: "/settings/sandbox", label: "code sandbox" },
+      { href: "/settings/computer", label: "computer agent", hint: "control host machine" },
     ],
   },
   {

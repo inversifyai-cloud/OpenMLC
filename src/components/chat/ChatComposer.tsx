@@ -52,6 +52,9 @@ type Props = {
   browserMode?: boolean;
   onBrowserToggle?: (active: boolean) => void;
   browserAvailable?: boolean;
+  computerMode?: boolean;
+  onComputerToggle?: (active: boolean) => void;
+  computerAvailable?: boolean;
   conversationId: string;
   personaId: string | null;
   onPersonaChange: (personaId: string | null) => void;
@@ -77,6 +80,9 @@ export function ChatComposer({
   browserMode = false,
   onBrowserToggle,
   browserAvailable = false,
+  computerMode = false,
+  onComputerToggle,
+  computerAvailable = false,
   conversationId,
   personaId,
   onPersonaChange,
@@ -309,6 +315,24 @@ export function ChatComposer({
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
               </svg>
               {browserMode ? "browser: on" : "browser"}
+            </button>
+          )}
+
+          {computerAvailable && onComputerToggle && (
+            <button
+              type="button"
+              className={`tool-pill${computerMode ? " active" : ""}`}
+              onClick={() => onComputerToggle(!computerMode)}
+              aria-label={computerMode ? "disable computer tools" : "enable computer tools"}
+              title={computerMode ? "computer agent on — click to disable" : "let the model control your computer"}
+              style={computerMode ? { color: "var(--green-400)", borderColor: "var(--green-400)" } : undefined}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <path d="M8 21h8" />
+                <path d="M12 17v4" />
+              </svg>
+              {computerMode ? "computer: on" : "computer"}
             </button>
           )}
 
