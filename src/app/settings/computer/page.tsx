@@ -34,27 +34,30 @@ type StatusResult = {
 type Tab = "macos" | "linux";
 
 const MACOS_INSTRUCTIONS = `# 1. Install dependencies
-brew install cliclick
+brew install cliclick node
 
-# 2. Start the agent (run this in a terminal on your Mac)
-npx openmlc-agent@latest
+# 2. Clone and build the agent
+git clone https://github.com/inversifyai-cloud/OpenMLC.git
+cd OpenMLC/packages/openmlc-agent
+npm install && npm run build
 
-# Or with a token (recommended):
-AGENT_TOKEN=your-secret-token npx openmlc-agent@latest
+# 3. Start the agent (keep this terminal open)
+AGENT_TOKEN=your-secret-token node dist/index.js
 
-# The agent listens on port 3031 by default.
-# Keep this terminal open while using computer mode.`;
+# The agent listens on http://127.0.0.1:3031 by default.`;
 
 const LINUX_INSTRUCTIONS = `# 1. Install dependencies
-sudo apt-get install -y xdotool scrot xclip imagemagick
+sudo apt-get install -y xdotool scrot xclip imagemagick nodejs npm
 
-# 2. Start the agent
-npx openmlc-agent@latest
+# 2. Clone and build the agent
+git clone https://github.com/inversifyai-cloud/OpenMLC.git
+cd OpenMLC/packages/openmlc-agent
+npm install && npm run build
 
-# Or with a token:
-AGENT_TOKEN=your-secret-token npx openmlc-agent@latest
+# 3. Start the agent (keep this terminal open)
+AGENT_TOKEN=your-secret-token node dist/index.js
 
-# The agent listens on port 3031 by default.`;
+# The agent listens on http://127.0.0.1:3031 by default.`;
 
 export default function ComputerAgentPage() {
   const [url, setUrl] = useState("http://host.docker.internal:3031");
