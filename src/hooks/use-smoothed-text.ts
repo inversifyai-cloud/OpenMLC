@@ -7,8 +7,12 @@ import { useEffect, useRef, useState } from "react";
  * This hook buffers the target text and emits it at a steady rate so the user sees
  * a typewriter-like reveal instead of stuttering chunks.
  *
- * The CPS rate auto-scales with backlog: bigger lag = faster catch-up, but never
- * so fast it feels jarring. When `streaming` flips to false, snaps to the full target.
+ * Pre-roll: holds output empty for ~700ms after streaming starts so the first
+ * tokens accumulate into a buffer. This is what prevents the early stutter when
+ * the smoother would otherwise catch up to the target and have nothing to emit.
+ *
+ * The CPS rate auto-scales with backlog: bigger lag = faster catch-up. When
+ * `streaming` flips to false, snaps to the full target instantly.
  */
 export function useSmoothedText(target: string, streaming: boolean): string {
   const [display, setDisplay] = useState<string>(streaming ? "" : target);
@@ -19,7 +23,6 @@ export function useSmoothedText(target: string, streaming: boolean): string {
   targetRef.current = target;
 
   useEffect(() => {
-    // Respect reduced-motion: skip animation entirely.
     if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
       displayRef.current = target;
       setDisplay(target);
@@ -27,17 +30,28 @@ export function useSmoothedText(target: string, streaming: boolean): string {
     }
 
     if (!streaming) {
-      // Stream ended — snap to full target so nothing is left in the buffer.
       displayRef.current = target;
       setDisplay(target);
       return;
     }
+
+    // Pre-roll: do nothing for ~700ms so a buffer of tokens accumulates.
+    // This kills the stutter at the start of every reply.
+    const PREROLL_MS = 700;
+    const startTime = performance.now();
 
     let cancelled = false;
     let lastT = 0;
 
     const tick = (t: number) => {
       if (cancelled) return;
+
+      // Pre-roll phase — keep display empty, let the buffer build.
+      if (t - startTime < PREROLL_MS) {
+        requestAnimationFrame(tick);
+        return;
+      }
+
       if (!lastT) lastT = t;
       const dt = (t - lastT) / 1000;
       lastT = t;
@@ -47,8 +61,9 @@ export function useSmoothedText(target: string, streaming: boolean): string {
 
       if (cur.length < tgt.length) {
         const lag = tgt.length - cur.length;
-        // Base ~80 cps, ramp up with sqrt(backlog) so big lags catch up gracefully.
-        const cps = 80 + Math.sqrt(lag) * 25;
+        // Conservative base rate so we don't outrun the incoming token stream.
+        // Scales gently with backlog; caps prevent jarring sprints.
+        const cps = Math.min(220, 55 + Math.sqrt(lag) * 18);
         const advance = Math.max(1, cps * dt);
         const newLen = Math.min(Math.ceil(cur.length + advance), tgt.length);
         const next = tgt.slice(0, newLen);
@@ -57,7 +72,6 @@ export function useSmoothedText(target: string, streaming: boolean): string {
           setDisplay(next);
         }
       } else if (cur.length > tgt.length) {
-        // Target shrank (e.g. message reset) — snap.
         displayRef.current = tgt;
         setDisplay(tgt);
       }
