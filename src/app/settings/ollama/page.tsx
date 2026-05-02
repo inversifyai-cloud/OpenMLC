@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { HubModel } from "@/lib/ollama/hub";
+import { QUANT_OPTIONS } from "@/lib/ollama/hub";
 
 const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 const LABEL: React.CSSProperties = {
@@ -13,13 +14,28 @@ const LABEL: React.CSSProperties = {
   marginBottom: 6,
   display: "block",
 };
+const SELECT_STYLE: React.CSSProperties = {
+  background: "var(--bg-canvas)",
+  border: "1px solid var(--stroke-1)",
+  borderRadius: "var(--r-1)",
+  color: "var(--fg-1)",
+  fontSize: 12,
+  fontFamily: "var(--font-mono)",
+  padding: "5px 8px",
+  width: "100%",
+  outline: "none",
+  cursor: "pointer",
+};
 
 const TAG_COLORS: Record<string, string> = {
-  fast: "var(--green-500)",
-  code: "var(--fg-accent)",
-  vision: "#a78bfa",
-  reasoning: "#f59e0b",
-  large: "var(--fg-3)",
+  fast:        "var(--green-500)",
+  code:        "var(--fg-accent)",
+  vision:      "#a78bfa",
+  reasoning:   "#f59e0b",
+  large:       "var(--fg-3)",
+  embedding:   "#06b6d4",
+  multilingual:"#ec4899",
+  moe:         "#8b5cf6",
 };
 
 type PullState = {
@@ -41,6 +57,137 @@ function humanBytes(bytes: number): string {
   return `${bytes} B`;
 }
 
+function ProgressBar({ pullState }: { pullState: PullState }) {
+  const pct =
+    pullState.total && pullState.completed !== undefined
+      ? Math.round((pullState.completed / pullState.total) * 100)
+      : null;
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ ...MONO, fontSize: 10, color: "var(--fg-3)" }}>
+          {pullState.status || "connecting…"}
+        </span>
+        {pct !== null && (
+          <span style={{ ...MONO, fontSize: 10, color: "var(--fg-2)" }}>{pct}%</span>
+        )}
+      </div>
+      <div style={{ height: 3, background: "var(--stroke-1)", borderRadius: 2, overflow: "hidden" }}>
+        <div
+          style={{
+            height: "100%",
+            width: pct !== null ? `${pct}%` : "30%",
+            background: "var(--green-500)",
+            borderRadius: 2,
+            transition: pct !== null ? "width 0.3s ease" : undefined,
+            animation: pct === null ? "pulse-bar 1.2s ease-in-out infinite" : undefined,
+          }}
+        />
+      </div>
+      {pullState.total && pullState.completed !== undefined && (
+        <div style={{ ...MONO, fontSize: 10, color: "var(--fg-4)", marginTop: 4 }}>
+          {humanBytes(pullState.completed)} / {humanBytes(pullState.total)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PullByName({
+  pulling,
+  pullState,
+  onPull,
+}: {
+  pulling: string | null;
+  pullState: PullState | null;
+  onPull: (modelId: string) => void;
+}) {
+  const [input, setInput] = useState("");
+  const [submitted, setSubmitted] = useState("");
+
+  const isPulling = !!submitted && pulling === submitted;
+
+  useEffect(() => {
+    if (!pulling) setSubmitted("");
+  }, [pulling]);
+
+  function handlePull() {
+    const model = input.trim();
+    if (!model || pulling) return;
+    setSubmitted(model);
+    onPull(model);
+  }
+
+  return (
+    <div
+      style={{
+        background: "var(--surface-1)",
+        border: "1px solid var(--stroke-1)",
+        borderRadius: "var(--r-2)",
+        padding: "14px 16px",
+        marginBottom: 20,
+      }}
+    >
+      <div style={{ fontWeight: 500, fontSize: 13, color: "var(--fg-1)", marginBottom: 4 }}>
+        Pull any model
+      </div>
+      <p style={{ ...MONO, fontSize: 11, color: "var(--fg-3)", margin: "0 0 12px", lineHeight: 1.6 }}>
+        Enter any Ollama model tag — including quantization suffixes like{" "}
+        <code>qwen3:14b-q4_K_M</code> or <code>llama3.1:8b-q8_0</code>.
+      </p>
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handlePull(); }}
+          placeholder="e.g. qwen3:14b-q4_K_M"
+          disabled={!!pulling}
+          style={{
+            flex: 1,
+            ...MONO,
+            fontSize: 12,
+            background: "var(--bg-canvas)",
+            border: "1px solid var(--stroke-1)",
+            borderRadius: "var(--r-1)",
+            color: "var(--fg-1)",
+            padding: "7px 10px",
+            outline: "none",
+          }}
+        />
+        <button
+          type="button"
+          onClick={handlePull}
+          disabled={!input.trim() || !!pulling}
+          style={{
+            ...MONO,
+            fontSize: 10,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            padding: "7px 14px",
+            background: !input.trim() || pulling ? "transparent" : "var(--fg-accent)",
+            color: !input.trim() || pulling ? "var(--fg-3)" : "#FAFAF7",
+            border: `1px solid ${!input.trim() || pulling ? "var(--stroke-1)" : "var(--fg-accent)"}`,
+            borderRadius: "var(--r-1)",
+            cursor: !input.trim() || pulling ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {isPulling ? "pulling…" : "pull"}
+        </button>
+      </div>
+
+      {isPulling && pullState && (
+        <div style={{ marginTop: 12 }}>
+          <ProgressBar pullState={pullState} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ModelCard({
   model,
   installed,
@@ -51,37 +198,44 @@ function ModelCard({
 }: {
   model: HubModel;
   installed: string[];
-  onInstall: (variantId: string) => void;
-  onRemove: (variantId: string) => void;
+  onInstall: (modelId: string) => void;
+  onRemove: (modelId: string) => void;
   pulling: string | null;
   pullState: PullState | null;
 }) {
-  const [selectedVariant, setSelectedVariant] = useState(model.variants[0]?.id ?? model.id);
+  const [selectedSizeId, setSelectedSizeId] = useState(model.sizes[0]?.id ?? model.id);
+  const [quantSuffix, setQuantSuffix] = useState("");
 
-  const installedVariants = model.variants.filter((v) => installed.some((i) => i === v.id || i.startsWith(v.id + ":")));
-  const isInstalled = installedVariants.some((v) => v.id === selectedVariant || installed.some((i) => i === selectedVariant || i.startsWith(selectedVariant + ":")));
-  const isPulling = pulling === selectedVariant;
+  const selectedSize = model.sizes.find((s) => s.id === selectedSizeId) ?? model.sizes[0];
+  const pullId = selectedSizeId + quantSuffix;
 
-  const pct =
-    pullState?.total && pullState.completed !== undefined
-      ? Math.round((pullState.completed / pullState.total) * 100)
-      : null;
+  const selectedQuant = QUANT_OPTIONS.find((q) => q.suffix === quantSuffix) ?? QUANT_OPTIONS[0];
+  const estimatedGb = selectedSize
+    ? (selectedSize.diskGb * selectedQuant.sizeMultiplier).toFixed(1)
+    : null;
+
+  const anyInstalled = model.sizes.some((s) =>
+    installed.some((i) => i === s.id || i.replace(/:latest$/, "") === s.id || i.startsWith(s.id + "-"))
+  );
+  const isInstalled = installed.some(
+    (i) => i === pullId || i.replace(/:latest$/, "") === pullId
+  );
+  const isPulling = pulling === pullId;
 
   return (
     <div
       style={{
         background: "var(--surface-1)",
-        border: `1px solid ${isInstalled ? "var(--green-500)" : "var(--stroke-1)"}`,
+        border: `1px solid ${anyInstalled ? "var(--green-500)" : "var(--stroke-1)"}`,
         borderRadius: "var(--r-3)",
         padding: 16,
         display: "flex",
         flexDirection: "column",
         gap: 10,
-        opacity: isPulling ? 0.95 : 1,
         position: "relative",
       }}
     >
-      {isInstalled && (
+      {anyInstalled && (
         <span
           style={{
             position: "absolute",
@@ -98,6 +252,7 @@ function ModelCard({
         </span>
       )}
 
+      {/* Header */}
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
           <span style={{ fontSize: 14, fontWeight: 600, color: "var(--fg-1)" }}>{model.name}</span>
@@ -120,82 +275,85 @@ function ModelCard({
             </span>
           ))}
         </div>
-        <p style={{ fontSize: 12, color: "var(--fg-3)", lineHeight: 1.5, margin: 0 }}>{model.description}</p>
+        <p style={{ fontSize: 12, color: "var(--fg-3)", lineHeight: 1.5, margin: 0 }}>
+          {model.description}
+        </p>
       </div>
 
-      {model.variants.length > 1 && (
+      {/* Size picker */}
+      {model.sizes.length > 1 && (
         <div>
-          <span style={LABEL}>variant</span>
+          <span style={LABEL}>size</span>
           <select
-            value={selectedVariant}
-            onChange={(e) => setSelectedVariant(e.target.value)}
-            disabled={isPulling}
-            style={{
-              background: "var(--bg-canvas)",
-              border: "1px solid var(--stroke-1)",
-              borderRadius: "var(--r-1)",
-              color: "var(--fg-1)",
-              fontSize: 12,
-              fontFamily: "var(--font-mono)",
-              padding: "5px 8px",
-              width: "100%",
-              outline: "none",
-              cursor: "pointer",
-            }}
+            value={selectedSizeId}
+            onChange={(e) => setSelectedSizeId(e.target.value)}
+            disabled={!!pulling}
+            style={SELECT_STYLE}
           >
-            {model.variants.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.label}
-                {installed.some((i) => i === v.id || i.startsWith(v.id + ":")) ? " ✓" : ""}
-              </option>
-            ))}
+            {model.sizes.map((s) => {
+              const isAnyQuant = installed.some(
+                (i) => i === s.id || i.replace(/:latest$/, "") === s.id || i.startsWith(s.id + "-")
+              );
+              return (
+                <option key={s.id} value={s.id}>
+                  {s.params} · ~{s.diskGb} GB{isAnyQuant ? " ✓" : ""}
+                </option>
+              );
+            })}
           </select>
         </div>
       )}
 
-      {isPulling && (
+      {/* Quantization picker */}
+      {model.supportsQuants && (
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ ...MONO, fontSize: 10, color: "var(--fg-3)" }}>
-              {pullState?.status ?? "connecting…"}
-            </span>
-            {pct !== null && (
-              <span style={{ ...MONO, fontSize: 10, color: "var(--fg-2)" }}>{pct}%</span>
+          <span style={LABEL}>quantization</span>
+          <select
+            value={quantSuffix}
+            onChange={(e) => setQuantSuffix(e.target.value)}
+            disabled={!!pulling}
+            style={SELECT_STYLE}
+          >
+            {QUANT_OPTIONS.map((q) => {
+              const thisId = selectedSizeId + q.suffix;
+              const inst = installed.some(
+                (i) => i === thisId || i.replace(/:latest$/, "") === thisId
+              );
+              const gb = selectedSize
+                ? (selectedSize.diskGb * q.sizeMultiplier).toFixed(1)
+                : "?";
+              return (
+                <option key={q.suffix} value={q.suffix}>
+                  {q.label || "default"} · ~{gb} GB · {q.note}{inst ? " ✓" : ""}
+                </option>
+              );
+            })}
+          </select>
+          <div style={{ ...MONO, fontSize: 10, color: "var(--fg-4)", marginTop: 4 }}>
+            pull id: <code>{pullId}</code>
+            {estimatedGb && (
+              <span style={{ marginLeft: 8 }}>· ~{estimatedGb} GB</span>
             )}
           </div>
-          <div
-            style={{
-              height: 3,
-              background: "var(--stroke-1)",
-              borderRadius: 2,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: pct !== null ? `${pct}%` : "30%",
-                background: "var(--green-500)",
-                borderRadius: 2,
-                transition: pct !== null ? "width 0.3s ease" : undefined,
-                animation: pct === null ? "pulse-bar 1.2s ease-in-out infinite" : undefined,
-              }}
-            />
-          </div>
-          {pullState?.total && pullState.completed !== undefined && (
-            <div style={{ ...MONO, fontSize: 10, color: "var(--fg-4)", marginTop: 4 }}>
-              {humanBytes(pullState.completed)} / {humanBytes(pullState.total)}
-            </div>
-          )}
         </div>
       )}
 
+      {!model.supportsQuants && estimatedGb && (
+        <div style={{ ...MONO, fontSize: 10, color: "var(--fg-4)" }}>
+          ~{estimatedGb} GB
+        </div>
+      )}
+
+      {/* Pull progress */}
+      {isPulling && pullState && <ProgressBar pullState={pullState} />}
+
+      {/* Action buttons */}
       <div style={{ display: "flex", gap: 6, marginTop: "auto" }}>
         {isInstalled ? (
           <button
             type="button"
-            onClick={() => onRemove(selectedVariant)}
-            disabled={isPulling}
+            onClick={() => onRemove(pullId)}
+            disabled={!!pulling}
             style={{
               ...MONO,
               flex: 1,
@@ -207,7 +365,7 @@ function ModelCard({
               color: "var(--signal-err)",
               border: "1px solid var(--stroke-1)",
               borderRadius: "var(--r-1)",
-              cursor: "pointer",
+              cursor: pulling ? "not-allowed" : "pointer",
             }}
           >
             remove
@@ -215,7 +373,7 @@ function ModelCard({
         ) : (
           <button
             type="button"
-            onClick={() => onInstall(selectedVariant)}
+            onClick={() => onInstall(pullId)}
             disabled={!!pulling}
             style={{
               ...MONO,
@@ -260,9 +418,9 @@ export default function OllamaPage() {
 
   useEffect(() => { void load(); }, []);
 
-  async function handleInstall(variantId: string) {
+  async function handleInstall(modelId: string) {
     setErr(null);
-    setPulling(variantId);
+    setPulling(modelId);
     setPullState({ status: "connecting…" });
 
     const ctrl = new AbortController();
@@ -272,7 +430,7 @@ export default function OllamaPage() {
       const res = await fetch("/api/ollama/pull", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ model: variantId }),
+        body: JSON.stringify({ model: modelId }),
         signal: ctrl.signal,
       });
 
@@ -302,11 +460,7 @@ export default function OllamaPage() {
               total?: number;
             };
             if (evt.status === "done") break;
-            setPullState({
-              status: evt.status ?? "",
-              completed: evt.completed,
-              total: evt.total,
-            });
+            setPullState({ status: evt.status ?? "", completed: evt.completed, total: evt.total });
           } catch {}
         }
       }
@@ -322,14 +476,14 @@ export default function OllamaPage() {
     }
   }
 
-  async function handleRemove(variantId: string) {
-    if (!confirm(`Remove ${variantId} from Ollama? This frees disk space.`)) return;
+  async function handleRemove(modelId: string) {
+    if (!confirm(`Remove ${modelId} from Ollama? This frees disk space.`)) return;
     setErr(null);
     try {
       const res = await fetch("/api/ollama/delete", {
         method: "DELETE",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ model: variantId }),
+        body: JSON.stringify({ model: modelId }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -341,11 +495,11 @@ export default function OllamaPage() {
     }
   }
 
-  const allTags = ["all", "fast", "code", "vision", "reasoning", "large"];
+  const allTags = ["all", "fast", "code", "vision", "reasoning", "embedding", "multilingual", "moe", "large"];
 
-  const visibleModels = data?.hub.filter((m) =>
+  const visibleModels = (data?.hub ?? []).filter((m) =>
     filterTag === "all" ? true : m.tags.includes(filterTag as never)
-  ) ?? [];
+  );
 
   if (loading) {
     return (
@@ -361,7 +515,7 @@ export default function OllamaPage() {
       <div style={{ marginBottom: 8 }}>
         <h1 style={{ fontSize: 20, fontWeight: 600, marginBottom: 4 }}>Local models</h1>
         <p style={{ color: "var(--fg-3)", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-          Pick a model and click install — OpenMLC downloads it into Ollama automatically.
+          Pick a model and click install — OpenMLC pulls it into Ollama automatically.
           Models run entirely on your machine, no API key needed.
         </p>
       </div>
@@ -427,19 +581,20 @@ export default function OllamaPage() {
         </div>
       )}
 
+      {/* Pull by model name */}
+      <PullByName
+        pulling={pulling}
+        pullState={pulling ? pullState : null}
+        onPull={handleInstall}
+      />
+
       {err && (
-        <div
-          style={{
-            color: "var(--signal-err)",
-            fontSize: 12,
-            marginBottom: 16,
-            fontFamily: "var(--font-mono)",
-          }}
-        >
+        <div style={{ color: "var(--signal-err)", fontSize: 12, marginBottom: 16, fontFamily: "var(--font-mono)" }}>
           {err}
         </div>
       )}
 
+      {/* Tag filter */}
       <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
         {allTags.map((tag) => (
           <button
@@ -453,8 +608,8 @@ export default function OllamaPage() {
               textTransform: "uppercase",
               padding: "5px 10px",
               background: filterTag === tag ? "var(--fg-accent)" : "transparent",
-              color: filterTag === tag ? "#FAFAF7" : "var(--fg-3)",
-              border: `1px solid ${filterTag === tag ? "var(--fg-accent)" : "var(--stroke-1)"}`,
+              color: filterTag === tag ? "#FAFAF7" : TAG_COLORS[tag] ?? "var(--fg-3)",
+              border: `1px solid ${filterTag === tag ? "var(--fg-accent)" : TAG_COLORS[tag] ?? "var(--stroke-1)"}`,
               borderRadius: "var(--r-1)",
               cursor: "pointer",
             }}
@@ -464,10 +619,11 @@ export default function OllamaPage() {
         ))}
       </div>
 
+      {/* Model grid */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
           gap: 12,
         }}
       >
