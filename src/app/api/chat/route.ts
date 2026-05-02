@@ -73,65 +73,51 @@ export async function POST(req: Request) {
     return Response.json({ error: "unknown model" }, { status: 400 });
   }
 
-  const budget = await checkBudget(profileId, model.providerId);
+  // ── Round 1: parallel pre-flight checks (no inter-dependencies) ─────────
+  const resolvedModel = model; // already null-checked above
+  async function resolveKey() {
+    if (resolvedModel.providerId === "custom") {
+      const { parseCustomModelId, resolveCustomProvider } = await import("@/lib/providers/custom");
+      const parsed = parseCustomModelId(resolvedModel.id);
+      if (!parsed) return null;
+      const cp = await resolveCustomProvider(profileId, parsed.customProviderId);
+      if (!cp) return null;
+      return { key: cp.key, baseUrl: cp.baseUrl, source: "byok" as const };
+    }
+    return resolveProviderKey(profileId, resolvedModel.providerId);
+  }
+
+  const [budget, conv, profileForPrefs, resolved, attachments] = await Promise.all([
+    checkBudget(profileId, model.providerId),
+    db.conversation.findUnique({
+      where: { id: conversationId },
+      select: {
+        id: true,
+        profileId: true,
+        systemPrompt: true,
+        personaId: true,
+        spaceId: true,
+        persona: { select: { systemPrompt: true } },
+        space: {
+          select: { id: true, name: true, systemPrompt: true, defaultPersonaId: true },
+        },
+      },
+    }),
+    db.profile.findUnique({ where: { id: profileId }, select: { memoryUseInContext: true } }),
+    resolveKey(),
+    attachmentIds?.length
+      ? db.attachment.findMany({ where: { id: { in: attachmentIds }, profileId } })
+      : Promise.resolve([]),
+  ]);
+
   if (budget.exceeded) {
     return Response.json(
       { error: "budget_exceeded", capUsd: budget.capUsd, currentUsd: budget.currentUsd },
       { status: 402 }
     );
   }
-
-  const conv = await db.conversation.findUnique({
-    where: { id: conversationId },
-    select: {
-      id: true,
-      profileId: true,
-      systemPrompt: true,
-      personaId: true,
-      // [spaces] inherit defaults from space when conversation has no overrides
-      spaceId: true,
-      persona: { select: { systemPrompt: true } },
-      space: {
-        select: {
-          id: true,
-          name: true,
-          systemPrompt: true,
-          defaultPersonaId: true,
-        },
-      },
-    },
-  });
   if (!conv || conv.profileId !== profileId) {
     return Response.json({ error: "conversation not found" }, { status: 404 });
-  }
-
-  const profileForPrefs = await db.profile.findUnique({
-    where: { id: profileId },
-    select: { memoryUseInContext: true },
-  });
-
-  // [spaces] If a conversation lives in a space and has no persona, fall back
-  // to the space's default persona for system-prompt purposes.
-  let effectivePersonaPrompt: string | null = conv.persona?.systemPrompt ?? null;
-  if (conv.spaceId && !conv.personaId && conv.space?.defaultPersonaId) {
-    const fallback = await db.persona.findUnique({
-      where: { id: conv.space.defaultPersonaId },
-      select: { systemPrompt: true, profileId: true },
-    });
-    if (fallback && fallback.profileId === profileId) {
-      effectivePersonaPrompt = fallback.systemPrompt;
-    }
-  }
-
-  let resolved: { key: string; baseUrl?: string; source: "byok" | "env" } | null = null;
-  if (model.providerId === "custom") {
-    const parsed = await import("@/lib/providers/custom").then((m) => m.parseCustomModelId(model.id));
-    if (parsed) {
-      const cp = await import("@/lib/providers/custom").then((m) => m.resolveCustomProvider(profileId, parsed.customProviderId));
-      if (cp) resolved = { key: cp.key, baseUrl: cp.baseUrl, source: "byok" };
-    }
-  } else {
-    resolved = await resolveProviderKey(profileId, model.providerId);
   }
   if (!resolved) {
     return Response.json(
@@ -143,11 +129,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const attachments = attachmentIds?.length
-    ? await db.attachment.findMany({
-        where: { id: { in: attachmentIds }, profileId },
-      })
-    : [];
+  // [spaces] Fall back to space's default persona if needed.
+  let effectivePersonaPrompt: string | null = conv.persona?.systemPrompt ?? null;
+  if (conv.spaceId && !conv.personaId && conv.space?.defaultPersonaId) {
+    const fallback = await db.persona.findUnique({
+      where: { id: conv.space.defaultPersonaId },
+      select: { systemPrompt: true, profileId: true },
+    });
+    if (fallback && fallback.profileId === profileId) {
+      effectivePersonaPrompt = fallback.systemPrompt;
+    }
+  }
 
   const imageAttachments = attachments.filter((a) => isImage(a.mimeType));
   const textAttachments = attachments.filter((a) => a.extractedText);
@@ -160,23 +152,18 @@ export async function POST(req: Request) {
   const userText = lastUi ? extractText(lastUi) : "";
   const storedContent = (userText + textContext).trim() || "[attachment]";
 
+  // ── Round 2: write user message, kick off fire-and-forget DB writes ─────
   const userMsg = await db.message.create({
-    data: {
-      conversationId,
-      role: "user",
-      content: storedContent,
-      modelId: model.id,
-    },
+    data: { conversationId, role: "user", content: storedContent, modelId: model.id },
   });
-
+  // These don't block the LLM call — fire and forget.
   if (attachmentIds?.length) {
-    await db.attachment.updateMany({
+    void db.attachment.updateMany({
       where: { id: { in: attachmentIds }, profileId, messageId: null },
       data: { messageId: userMsg.id },
     });
   }
-
-  await db.conversation.update({
+  void db.conversation.update({
     where: { id: conversationId },
     data: { updatedAt: new Date(), modelId: model.id },
   });
@@ -192,97 +179,62 @@ export async function POST(req: Request) {
     resolved.baseUrl
   );
 
-  let ragContext: string | null = null;
-  if (knowledgeBaseEnabled && userText) {
-    try {
-      // [spaces] When in a space, RAG scope = space files + root files.
-      ragContext = await buildRAGContext(profileId, userText, {
-        maxChars: 6000,
-        spaceId: conv.spaceId ?? undefined,
-      });
-    } catch (err) {
-      console.error("[chat] RAG lookup failed", err);
-    }
-  }
+  // ── Round 3: parallel context gathering ──────────────────────────────────
+  const urls = userText ? extractUrls(userText).slice(0, 3) : [];
+  const [ragContext, fetchedUrls, openaiResolved, settings] = await Promise.all([
+    knowledgeBaseEnabled && userText
+      ? buildRAGContext(profileId, userText, { maxChars: 6000, spaceId: conv.spaceId ?? undefined })
+          .catch((err) => { console.error("[chat] RAG lookup failed", err); return null; })
+      : Promise.resolve(null),
+    urls.length > 0
+      ? Promise.all(urls.map((u) => fetchUrlContent(u).catch(() => null)))
+      : Promise.resolve([] as (Awaited<ReturnType<typeof fetchUrlContent>> | null)[]),
+    toolsEnabled ? resolveProviderKey(profileId, "openai") : Promise.resolve(null),
+    getSettings(),
+  ]);
 
   const urlInjections: string[] = [];
-  if (userText) {
-    const urls = extractUrls(userText).slice(0, 3);
-    if (urls.length > 0) {
-      const fetched = await Promise.all(urls.map((u) => fetchUrlContent(u).catch(() => null)));
-      for (let i = 0; i < urls.length; i++) {
-        const r = fetched[i];
-        if (r) {
-          urlInjections.push(
-            `[Fetched ${urls[i]} (${r.hostname})]\nTitle: ${r.title}\n\n${r.text}`
-          );
-        }
-      }
-    }
+  for (let i = 0; i < urls.length; i++) {
+    const r = fetchedUrls[i];
+    if (r) urlInjections.push(`[Fetched ${urls[i]} (${r.hostname})]\nTitle: ${r.title}\n\n${r.text}`);
   }
 
   const tavilyKey = process.env.TAVILY_API_KEY ?? undefined;
-  const openaiResolved = await resolveProviderKey(profileId, "openai");
-  const settings = await getSettings();
   const computerAgentUrl = settings.computerAgentUrl ?? process.env.OPENMLC_COMPUTER_URL ?? undefined;
   const computerAgentToken = settings.computerAgentToken ?? process.env.OPENMLC_COMPUTER_TOKEN ?? undefined;
   const toolCtx: ToolContext = {
     profileId,
     conversationId,
     db,
-    resolvedKeys: {
-      openai: openaiResolved?.key,
-      tavily: tavilyKey,
-    },
+    resolvedKeys: { openai: openaiResolved?.key, tavily: tavilyKey },
     sandboxEnabled: settings.codeSandboxEnabled,
     computerAgentUrl: computerMode ? computerAgentUrl : undefined,
     computerAgentToken: computerMode ? computerAgentToken : undefined,
   };
-  const { tools: builtinTools, enabledNames, connectorProviders } = await buildToolsForRequest({
-    model,
-    userPrefs: {
-      toolsEnabled,
-      webSearchEnabled,
-      knowledgeBaseEnabled,
-    },
-    context: toolCtx,
-  });
 
-  let mcpBundle: Awaited<ReturnType<typeof buildMcpTools>> | null = null;
-  if (toolsEnabled && model.capabilities.includes("tools")) {
-    try {
-      mcpBundle = await buildMcpTools(profileId);
-    } catch (err) {
-      console.error("[chat] MCP tool build failed", err);
-    }
-  }
+  // ── Round 4: parallel tool + memory + research setup ─────────────────────
+  const canUseMcp = toolsEnabled && model.capabilities.includes("tools");
+  const canSearchMemory = !!(profileForPrefs?.memoryUseInContext && userText);
+
+  const [{ tools: builtinTools, enabledNames, connectorProviders }, mcpBundle, memoryMems, researchSession] =
+    await Promise.all([
+      buildToolsForRequest({ model, userPrefs: { toolsEnabled, webSearchEnabled, knowledgeBaseEnabled }, context: toolCtx }),
+      canUseMcp
+        ? buildMcpTools(profileId).catch((err) => { console.error("[chat] MCP tool build failed", err); return null; })
+        : Promise.resolve(null),
+      canSearchMemory
+        ? searchMemories(profileId, userText, undefined, { spaceId: conv.spaceId ?? null })
+            .catch((err) => { console.error("[chat] memory retrieval failed", err); return []; })
+        : Promise.resolve([]),
+      researchMode && userText
+        ? db.researchSession.create({ data: { conversationId, query: userText.slice(0, 2000), status: "executing" } })
+            .catch((err) => { console.error("[chat] research session create failed", err); return null; })
+        : Promise.resolve(null),
+    ]);
+
   const tools = { ...builtinTools, ...(mcpBundle?.tools ?? {}) };
-
-  let memoryBlock: string | null = null;
-  if (profileForPrefs?.memoryUseInContext && userText) {
-    try {
-      const mems = await searchMemories(profileId, userText, undefined, { spaceId: conv.spaceId ?? null });
-      memoryBlock = formatMemoriesForPrompt(mems) || null;
-    } catch (err) {
-      console.error("[chat] memory retrieval failed", err);
-    }
-  }
-
-  let researchSessionId: string | null = null;
-  if (researchMode && userText) {
-    try {
-      const created = await db.researchSession.create({
-        data: {
-          conversationId,
-          query: userText.slice(0, 2000),
-          status: "executing",
-        },
-      });
-      researchSessionId = created.id;
-    } catch (err) {
-      console.error("[chat] research session create failed", err);
-    }
-  }
+  const memoryBlock = canSearchMemory ? (formatMemoriesForPrompt(memoryMems) || null) : null;
+  const researchSessionId = researchSession?.id ?? null;
 
   const browserSidecarEnabled =
     process.env.OPENMLC_BROWSER_ENABLED === "true" && browserMode;

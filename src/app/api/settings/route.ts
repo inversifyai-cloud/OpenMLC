@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
+import { invalidateSettingsCache } from "@/lib/settings";
 
 const patchSchema = z.object({
   codeSandboxEnabled: z.boolean().optional(),
@@ -39,6 +40,7 @@ export async function PATCH(req: Request) {
     update: parsed.data,
     create: { id: "singleton", ...parsed.data },
   });
+  invalidateSettingsCache();
   return NextResponse.json({
     codeSandboxEnabled: settings.codeSandboxEnabled,
     swarmEnabled: settings.swarmEnabled,

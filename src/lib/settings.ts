@@ -1,11 +1,25 @@
 import { db } from "./db";
 
+// Settings is a global singleton that only changes via the settings API.
+// Cache for 30s so every chat request doesn't pay a DB round-trip.
+let _cache: Awaited<ReturnType<typeof db.settings.upsert>> | null = null;
+let _cacheAt = 0;
+const TTL = 30_000;
+
 export async function getSettings() {
-  return db.settings.upsert({
+  const now = Date.now();
+  if (_cache && now - _cacheAt < TTL) return _cache;
+  _cache = await db.settings.upsert({
     where: { id: "singleton" },
     update: {},
     create: { id: "singleton" },
   });
+  _cacheAt = now;
+  return _cache;
+}
+
+export function invalidateSettingsCache() {
+  _cache = null;
 }
 
 export async function setProfileCreationLocked(locked: boolean) {
