@@ -580,15 +580,37 @@ export default function OllamaPage() {
                 key={m}
                 style={{
                   ...MONO,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
                   fontSize: 11,
                   color: "var(--green-500)",
                   background: "var(--bg-canvas)",
                   border: "1px solid var(--green-500)",
                   borderRadius: "var(--r-1)",
-                  padding: "3px 8px",
+                  padding: "3px 6px 3px 8px",
                 }}
               >
                 {m.replace(/:latest$/, "")}
+                <button
+                  type="button"
+                  onClick={() => handleRemove(m)}
+                  title={`Remove ${m}`}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--green-500)",
+                    cursor: "pointer",
+                    padding: "0 2px",
+                    fontSize: 13,
+                    lineHeight: 1,
+                    opacity: 0.6,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
+                >
+                  ×
+                </button>
               </span>
             ))}
           </div>
