@@ -207,9 +207,20 @@ function ModelCard({
   const [quantSuffix, setQuantSuffix] = useState("");
 
   const selectedSize = model.sizes.find((s) => s.id === selectedSizeId) ?? model.sizes[0];
-  const pullId = selectedSizeId + quantSuffix;
 
-  const selectedQuant = QUANT_OPTIONS.find((q) => q.suffix === quantSuffix) ?? QUANT_OPTIONS[0];
+  // Only show quant picker when the selected size has explicitly listed quants.
+  const availableQuants = selectedSize?.quants
+    ? QUANT_OPTIONS.filter((q) => q.suffix === "" || selectedSize.quants!.includes(q.suffix))
+    : null;
+
+  // Reset quant when size changes and the previous suffix isn't available.
+  const effectiveSuffix = availableQuants?.some((q) => q.suffix === quantSuffix)
+    ? quantSuffix
+    : "";
+
+  const pullId = selectedSizeId + effectiveSuffix;
+
+  const selectedQuant = QUANT_OPTIONS.find((q) => q.suffix === effectiveSuffix) ?? QUANT_OPTIONS[0];
   const estimatedGb = selectedSize
     ? (selectedSize.diskGb * selectedQuant.sizeMultiplier).toFixed(1)
     : null;
@@ -304,17 +315,17 @@ function ModelCard({
         </div>
       )}
 
-      {/* Quantization picker */}
-      {model.supportsQuants && (
+      {/* Quantization picker — only shown when the selected size has explicit quants */}
+      {availableQuants && availableQuants.length > 1 && (
         <div>
           <span style={LABEL}>quantization</span>
           <select
-            value={quantSuffix}
+            value={effectiveSuffix}
             onChange={(e) => setQuantSuffix(e.target.value)}
             disabled={!!pulling}
             style={SELECT_STYLE}
           >
-            {QUANT_OPTIONS.map((q) => {
+            {availableQuants.map((q) => {
               const thisId = selectedSizeId + q.suffix;
               const inst = installed.some(
                 (i) => i === thisId || i.replace(/:latest$/, "") === thisId
@@ -331,14 +342,12 @@ function ModelCard({
           </select>
           <div style={{ ...MONO, fontSize: 10, color: "var(--fg-4)", marginTop: 4 }}>
             pull id: <code>{pullId}</code>
-            {estimatedGb && (
-              <span style={{ marginLeft: 8 }}>· ~{estimatedGb} GB</span>
-            )}
+            {estimatedGb && <span style={{ marginLeft: 8 }}>· ~{estimatedGb} GB</span>}
           </div>
         </div>
       )}
 
-      {!model.supportsQuants && estimatedGb && (
+      {(!availableQuants || availableQuants.length <= 1) && estimatedGb && (
         <div style={{ ...MONO, fontSize: 10, color: "var(--fg-4)" }}>
           ~{estimatedGb} GB
         </div>
@@ -458,10 +467,15 @@ export default function OllamaPage() {
               status?: string;
               completed?: number;
               total?: number;
+              error?: string;
             };
+            if (evt.error) throw new Error(evt.error);
             if (evt.status === "done") break;
             setPullState({ status: evt.status ?? "", completed: evt.completed, total: evt.total });
-          } catch {}
+          } catch (parseErr) {
+            if (parseErr instanceof SyntaxError) continue;
+            throw parseErr;
+          }
         }
       }
     } catch (e) {

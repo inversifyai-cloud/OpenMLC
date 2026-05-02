@@ -1,7 +1,10 @@
 export type HubModelSize = {
   id: string;      // e.g. "qwen3:14b"
   params: string;  // e.g. "14B"
-  diskGb: number;  // approximate disk at default (q4_K_M) quantization
+  diskGb: number;  // approximate disk at default quant
+  // Explicit quant suffixes available in the Ollama registry for this size.
+  // When undefined, no quant picker is shown (only the default tag is pullable).
+  quants?: string[];
 };
 
 export type QuantOption = {
@@ -20,21 +23,20 @@ export type HubModel = {
   contextWindow: number;
   tags: Array<"fast" | "code" | "vision" | "reasoning" | "large" | "embedding" | "multilingual" | "moe">;
   sizes: HubModelSize[];
-  supportsQuants?: boolean;
 };
 
-// Standard quantization options. Not every model has every quant available —
-// Ollama will error if you pull a non-existent quant, but these are the common ones.
+// All known quant options with size multipliers relative to q4_K_M (1.0).
+// Only quants listed in a size's `quants` array are shown in the picker.
 export const QUANT_OPTIONS: QuantOption[] = [
-  { suffix: "",         label: "default",   note: "recommended",      sizeMultiplier: 1.00 },
-  { suffix: "-q2_K",   label: "q2_K",      note: "smallest",          sizeMultiplier: 0.61 },
-  { suffix: "-q3_K_M", label: "q3_K_M",    note: "very small",        sizeMultiplier: 0.76 },
-  { suffix: "-q4_K_S", label: "q4_K_S",    note: "slightly smaller",  sizeMultiplier: 0.92 },
-  { suffix: "-q4_K_M", label: "q4_K_M",    note: "default quality",   sizeMultiplier: 1.00 },
-  { suffix: "-q5_K_M", label: "q5_K_M",    note: "higher quality",    sizeMultiplier: 1.27 },
-  { suffix: "-q6_K",   label: "q6_K",      note: "near lossless",     sizeMultiplier: 1.57 },
-  { suffix: "-q8_0",   label: "q8_0",      note: "best quality",      sizeMultiplier: 1.64 },
-  { suffix: "-fp16",   label: "fp16",      note: "full precision",    sizeMultiplier: 3.00 },
+  { suffix: "",         label: "default",   note: "recommended",    sizeMultiplier: 1.00 },
+  { suffix: "-q2_K",   label: "q2_K",      note: "smallest",        sizeMultiplier: 0.61 },
+  { suffix: "-q3_K_M", label: "q3_K_M",    note: "very small",      sizeMultiplier: 0.76 },
+  { suffix: "-q4_K_S", label: "q4_K_S",    note: "slightly smaller", sizeMultiplier: 0.92 },
+  { suffix: "-q4_K_M", label: "q4_K_M",    note: "default quality", sizeMultiplier: 1.00 },
+  { suffix: "-q5_K_M", label: "q5_K_M",    note: "higher quality",  sizeMultiplier: 1.27 },
+  { suffix: "-q6_K",   label: "q6_K",      note: "near lossless",   sizeMultiplier: 1.57 },
+  { suffix: "-q8_0",   label: "q8_0",      note: "best quality",    sizeMultiplier: 1.64 },
+  { suffix: "-fp16",   label: "fp16",      note: "full precision",  sizeMultiplier: 3.00 },
 ];
 
 export const HUB_MODELS: HubModel[] = [
@@ -42,19 +44,18 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "qwen3",
     name: "Qwen3",
-    description: "Alibaba's latest flagship. Hybrid thinking mode with best-in-class benchmarks across sizes. Tops most open leaderboards.",
+    description: "Alibaba's latest flagship. Hybrid thinking mode with best-in-class benchmarks across sizes.",
     paramSize: "8B",
     diskGb: 5.2,
     contextWindow: 131072,
     tags: ["reasoning"],
-    supportsQuants: true,
     sizes: [
-      { id: "qwen3:0.6b", params: "0.6B", diskGb: 0.4  },
-      { id: "qwen3:1.7b", params: "1.7B", diskGb: 1.1  },
-      { id: "qwen3:4b",   params: "4B",   diskGb: 2.6  },
-      { id: "qwen3:8b",   params: "8B",   diskGb: 5.2  },
-      { id: "qwen3:14b",  params: "14B",  diskGb: 9.0  },
-      { id: "qwen3:32b",  params: "32B",  diskGb: 20.0 },
+      { id: "qwen3:0.6b", params: "0.6B", diskGb: 0.4,  quants: ["-q4_K_M"] },
+      { id: "qwen3:1.7b", params: "1.7B", diskGb: 1.1,  quants: ["-q4_K_M"] },
+      { id: "qwen3:4b",   params: "4B",   diskGb: 2.6,  quants: ["-q4_K_M"] },
+      { id: "qwen3:8b",   params: "8B",   diskGb: 5.2,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "qwen3:14b",  params: "14B",  diskGb: 9.0,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "qwen3:32b",  params: "32B",  diskGb: 20.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -62,14 +63,13 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "qwq",
     name: "QwQ",
-    description: "Qwen's dedicated slow-think reasoning model. Deep chain-of-thought before answering — great for math and logic.",
+    description: "Qwen's dedicated slow-think reasoning model. Deep chain-of-thought before answering.",
     paramSize: "32B",
     diskGb: 20.0,
     contextWindow: 131072,
     tags: ["reasoning", "large"],
-    supportsQuants: true,
     sizes: [
-      { id: "qwq:32b", params: "32B", diskGb: 20.0 },
+      { id: "qwq:32b", params: "32B", diskGb: 20.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -77,20 +77,19 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "qwen2.5",
     name: "Qwen 2.5",
-    description: "Alibaba's multilingual powerhouse. Excellent at Asian languages, coding, and math. Available from 0.5B to 72B.",
+    description: "Alibaba's multilingual powerhouse. Excellent at Asian languages, coding, and math.",
     paramSize: "7B",
     diskGb: 4.7,
     contextWindow: 131072,
     tags: ["multilingual"],
-    supportsQuants: true,
     sizes: [
-      { id: "qwen2.5:0.5b", params: "0.5B", diskGb: 0.4  },
-      { id: "qwen2.5:1.5b", params: "1.5B", diskGb: 1.0  },
-      { id: "qwen2.5:3b",   params: "3B",   diskGb: 2.0  },
-      { id: "qwen2.5:7b",   params: "7B",   diskGb: 4.7  },
-      { id: "qwen2.5:14b",  params: "14B",  diskGb: 9.0  },
-      { id: "qwen2.5:32b",  params: "32B",  diskGb: 20.0 },
-      { id: "qwen2.5:72b",  params: "72B",  diskGb: 47.0 },
+      { id: "qwen2.5:0.5b", params: "0.5B", diskGb: 0.4,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "qwen2.5:1.5b", params: "1.5B", diskGb: 1.0,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "qwen2.5:3b",   params: "3B",   diskGb: 2.0,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "qwen2.5:7b",   params: "7B",   diskGb: 4.7,  quants: ["-q4_K_M", "-q5_K_M", "-q8_0"] },
+      { id: "qwen2.5:14b",  params: "14B",  diskGb: 9.0,  quants: ["-q4_K_M", "-q5_K_M", "-q8_0"] },
+      { id: "qwen2.5:32b",  params: "32B",  diskGb: 20.0, quants: ["-q4_K_M", "-q8_0"] },
+      { id: "qwen2.5:72b",  params: "72B",  diskGb: 47.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -103,13 +102,12 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 4.7,
     contextWindow: 131072,
     tags: ["code"],
-    supportsQuants: true,
     sizes: [
-      { id: "qwen2.5-coder:1.5b", params: "1.5B", diskGb: 1.0  },
-      { id: "qwen2.5-coder:3b",   params: "3B",   diskGb: 2.0  },
-      { id: "qwen2.5-coder:7b",   params: "7B",   diskGb: 4.7  },
-      { id: "qwen2.5-coder:14b",  params: "14B",  diskGb: 9.0  },
-      { id: "qwen2.5-coder:32b",  params: "32B",  diskGb: 20.0 },
+      { id: "qwen2.5-coder:1.5b", params: "1.5B", diskGb: 1.0,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "qwen2.5-coder:3b",   params: "3B",   diskGb: 2.0,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "qwen2.5-coder:7b",   params: "7B",   diskGb: 4.7,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "qwen2.5-coder:14b",  params: "14B",  diskGb: 9.0,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "qwen2.5-coder:32b",  params: "32B",  diskGb: 20.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -117,12 +115,11 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "qwen2.5-vl",
     name: "Qwen 2.5 VL",
-    description: "Alibaba's vision-language model. Understands images, diagrams, screenshots, and documents alongside text.",
+    description: "Alibaba's vision-language model. Understands images, diagrams, screenshots, and documents.",
     paramSize: "7B",
     diskGb: 5.4,
     contextWindow: 32768,
     tags: ["vision"],
-    supportsQuants: true,
     sizes: [
       { id: "qwen2.5-vl:3b",  params: "3B",  diskGb: 2.3  },
       { id: "qwen2.5-vl:7b",  params: "7B",  diskGb: 5.4  },
@@ -140,14 +137,13 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 4.7,
     contextWindow: 65536,
     tags: ["reasoning"],
-    supportsQuants: true,
     sizes: [
-      { id: "deepseek-r1:1.5b", params: "1.5B", diskGb: 1.1  },
-      { id: "deepseek-r1:7b",   params: "7B",   diskGb: 4.7  },
-      { id: "deepseek-r1:8b",   params: "8B",   diskGb: 5.2  },
-      { id: "deepseek-r1:14b",  params: "14B",  diskGb: 9.0  },
-      { id: "deepseek-r1:32b",  params: "32B",  diskGb: 20.0 },
-      { id: "deepseek-r1:70b",  params: "70B",  diskGb: 43.0 },
+      { id: "deepseek-r1:1.5b", params: "1.5B", diskGb: 1.1,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "deepseek-r1:7b",   params: "7B",   diskGb: 4.7,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "deepseek-r1:8b",   params: "8B",   diskGb: 5.2,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "deepseek-r1:14b",  params: "14B",  diskGb: 9.0,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "deepseek-r1:32b",  params: "32B",  diskGb: 20.0, quants: ["-q4_K_M", "-q8_0"] },
+      { id: "deepseek-r1:70b",  params: "70B",  diskGb: 43.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -155,14 +151,13 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "deepseek-coder-v2",
     name: "DeepSeek Coder V2",
-    description: "MoE coding model — activates 2.4B of 16B params per token. Strong code generation, completion, and debugging.",
+    description: "MoE coding model — activates 2.4B of 16B params per token. Strong code generation and debugging.",
     paramSize: "16B",
     diskGb: 8.9,
     contextWindow: 163840,
     tags: ["code", "moe"],
-    supportsQuants: true,
     sizes: [
-      { id: "deepseek-coder-v2:16b",  params: "16B",  diskGb: 8.9   },
+      { id: "deepseek-coder-v2:16b",  params: "16B",  diskGb: 8.9,   quants: ["-q4_K_M", "-q8_0"] },
       { id: "deepseek-coder-v2:236b", params: "236B", diskGb: 133.0 },
     ],
   },
@@ -176,10 +171,9 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 2.0,
     contextWindow: 131072,
     tags: ["fast"],
-    supportsQuants: true,
     sizes: [
-      { id: "llama3.2:1b", params: "1B", diskGb: 1.3 },
-      { id: "llama3.2:3b", params: "3B", diskGb: 2.0 },
+      { id: "llama3.2:1b", params: "1B", diskGb: 1.3, quants: ["-q4_K_M", "-q8_0", "-fp16"] },
+      { id: "llama3.2:3b", params: "3B", diskGb: 2.0, quants: ["-q4_K_M", "-q8_0", "-fp16"] },
     ],
   },
 
@@ -192,7 +186,6 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 7.9,
     contextWindow: 131072,
     tags: ["vision"],
-    supportsQuants: true,
     sizes: [
       { id: "llama3.2-vision:11b", params: "11B", diskGb: 7.9  },
       { id: "llama3.2-vision:90b", params: "90B", diskGb: 55.0 },
@@ -208,10 +201,15 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 4.7,
     contextWindow: 131072,
     tags: [],
-    supportsQuants: true,
     sizes: [
-      { id: "llama3.1:8b",  params: "8B",  diskGb: 4.7  },
-      { id: "llama3.1:70b", params: "70B", diskGb: 40.0 },
+      {
+        id: "llama3.1:8b", params: "8B", diskGb: 4.7,
+        quants: ["-q3_K_M", "-q4_K_S", "-q4_K_M", "-q5_K_M", "-q6_K", "-q8_0", "-fp16"],
+      },
+      {
+        id: "llama3.1:70b", params: "70B", diskGb: 40.0,
+        quants: ["-q2_K", "-q3_K_M", "-q4_K_M", "-q5_K_M", "-q8_0"],
+      },
     ],
   },
 
@@ -224,9 +222,11 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 43.0,
     contextWindow: 131072,
     tags: ["large", "reasoning"],
-    supportsQuants: true,
     sizes: [
-      { id: "llama3.3:70b", params: "70B", diskGb: 43.0 },
+      {
+        id: "llama3.3:70b", params: "70B", diskGb: 43.0,
+        quants: ["-q2_K", "-q3_K_M", "-q4_K_M", "-q5_K_M", "-q8_0"],
+      },
     ],
   },
 
@@ -239,9 +239,11 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 4.1,
     contextWindow: 32768,
     tags: ["fast"],
-    supportsQuants: true,
     sizes: [
-      { id: "mistral:7b", params: "7B", diskGb: 4.1 },
+      {
+        id: "mistral:7b", params: "7B", diskGb: 4.1,
+        quants: ["-q4_K_M", "-q5_K_M", "-q6_K", "-q8_0"],
+      },
     ],
   },
 
@@ -249,14 +251,13 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "mistral-small",
     name: "Mistral Small",
-    description: "Mistral's 24B model — a significant step up from 7B without Mixtral's footprint. Great quality/size trade-off.",
+    description: "Mistral's 24B model — a significant step up from 7B without Mixtral's footprint.",
     paramSize: "24B",
     diskGb: 15.0,
     contextWindow: 32768,
     tags: [],
-    supportsQuants: true,
     sizes: [
-      { id: "mistral-small:24b", params: "24B", diskGb: 15.0 },
+      { id: "mistral-small:24b", params: "24B", diskGb: 15.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -269,9 +270,8 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 7.1,
     contextWindow: 128000,
     tags: ["code", "multilingual"],
-    supportsQuants: true,
     sizes: [
-      { id: "mistral-nemo:12b", params: "12B", diskGb: 7.1 },
+      { id: "mistral-nemo:12b", params: "12B", diskGb: 7.1, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -279,15 +279,14 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "mixtral",
     name: "Mixtral",
-    description: "Mistral's mixture-of-experts model. Activates 2 of 8 experts per token — fast inference with large-model quality.",
+    description: "Mistral's mixture-of-experts model. Activates 2 of 8 experts per token — fast with large-model quality.",
     paramSize: "8x7B",
     diskGb: 26.0,
     contextWindow: 47000,
     tags: ["moe", "large"],
-    supportsQuants: true,
     sizes: [
-      { id: "mixtral:8x7b",  params: "8×7B",  diskGb: 26.0 },
-      { id: "mixtral:8x22b", params: "8×22B", diskGb: 80.0 },
+      { id: "mixtral:8x7b",  params: "8×7B",  diskGb: 26.0, quants: ["-q4_K_M", "-q5_K_M", "-q8_0"] },
+      { id: "mixtral:8x22b", params: "8×22B", diskGb: 80.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -300,12 +299,11 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 3.3,
     contextWindow: 131072,
     tags: ["fast", "vision"],
-    supportsQuants: true,
     sizes: [
       { id: "gemma3:1b",  params: "1B",  diskGb: 0.8  },
-      { id: "gemma3:4b",  params: "4B",  diskGb: 3.3  },
-      { id: "gemma3:12b", params: "12B", diskGb: 8.1  },
-      { id: "gemma3:27b", params: "27B", diskGb: 17.0 },
+      { id: "gemma3:4b",  params: "4B",  diskGb: 3.3,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "gemma3:12b", params: "12B", diskGb: 8.1,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "gemma3:27b", params: "27B", diskGb: 17.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -318,9 +316,8 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 9.1,
     contextWindow: 16384,
     tags: ["reasoning"],
-    supportsQuants: true,
     sizes: [
-      { id: "phi4:14b", params: "14B", diskGb: 9.1 },
+      { id: "phi4:14b", params: "14B", diskGb: 9.1, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -333,9 +330,8 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 2.5,
     contextWindow: 16384,
     tags: ["fast", "reasoning"],
-    supportsQuants: true,
     sizes: [
-      { id: "phi4-mini:3.8b", params: "3.8B", diskGb: 2.5 },
+      { id: "phi4-mini:3.8b", params: "3.8B", diskGb: 2.5, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -343,14 +339,13 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "command-r",
     name: "Command R",
-    description: "Cohere's RAG-optimized model. Built for retrieval-augmented generation, tool use, and long-document tasks.",
+    description: "Cohere's RAG-optimized model. Built for retrieval-augmented generation, tool use, and long documents.",
     paramSize: "35B",
     diskGb: 21.0,
     contextWindow: 131072,
     tags: ["large"],
-    supportsQuants: true,
     sizes: [
-      { id: "command-r:35b", params: "35B", diskGb: 21.0 },
+      { id: "command-r:35b", params: "35B", diskGb: 21.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -358,14 +353,13 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "command-r-plus",
     name: "Command R+",
-    description: "Cohere's flagship 104B model. Enterprise-grade instruction following, RAG, and agentic workflows at scale.",
+    description: "Cohere's flagship 104B model. Enterprise-grade instruction following and RAG at scale.",
     paramSize: "104B",
     diskGb: 62.0,
     contextWindow: 131072,
     tags: ["large"],
-    supportsQuants: true,
     sizes: [
-      { id: "command-r-plus:104b", params: "104B", diskGb: 62.0 },
+      { id: "command-r-plus:104b", params: "104B", diskGb: 62.0, quants: ["-q4_K_M"] },
     ],
   },
 
@@ -373,17 +367,16 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "falcon3",
     name: "Falcon 3",
-    description: "TII's third-gen open model. Strong across sizes from 1B to 10B with competitive benchmark scores.",
+    description: "TII's third-gen open model. Strong across sizes from 1B to 10B.",
     paramSize: "7B",
     diskGb: 4.5,
     contextWindow: 32768,
     tags: [],
-    supportsQuants: true,
     sizes: [
       { id: "falcon3:1b",  params: "1B",  diskGb: 0.7 },
-      { id: "falcon3:3b",  params: "3B",  diskGb: 2.0 },
-      { id: "falcon3:7b",  params: "7B",  diskGb: 4.5 },
-      { id: "falcon3:10b", params: "10B", diskGb: 6.4 },
+      { id: "falcon3:3b",  params: "3B",  diskGb: 2.0, quants: ["-q4_K_M", "-q8_0"] },
+      { id: "falcon3:7b",  params: "7B",  diskGb: 4.5, quants: ["-q4_K_M", "-q8_0"] },
+      { id: "falcon3:10b", params: "10B", diskGb: 6.4, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -391,16 +384,15 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "starcoder2",
     name: "StarCoder 2",
-    description: "Hugging Face's code model trained on 600+ languages from The Stack v2. Strong at completion and fill-in-the-middle.",
+    description: "Hugging Face's code model trained on 600+ languages from The Stack v2. Strong at completion and infill.",
     paramSize: "7B",
     diskGb: 4.0,
     contextWindow: 16384,
     tags: ["code"],
-    supportsQuants: true,
     sizes: [
-      { id: "starcoder2:3b",  params: "3B",  diskGb: 1.7 },
-      { id: "starcoder2:7b",  params: "7B",  diskGb: 4.0 },
-      { id: "starcoder2:15b", params: "15B", diskGb: 9.0 },
+      { id: "starcoder2:3b",  params: "3B",  diskGb: 1.7, quants: ["-q4_K_M", "-q8_0"] },
+      { id: "starcoder2:7b",  params: "7B",  diskGb: 4.0, quants: ["-q4_K_M", "-q8_0"] },
+      { id: "starcoder2:15b", params: "15B", diskGb: 9.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -413,9 +405,8 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 5.5,
     contextWindow: 131072,
     tags: ["code"],
-    supportsQuants: true,
     sizes: [
-      { id: "yi-coder:9b", params: "9B", diskGb: 5.5 },
+      { id: "yi-coder:9b", params: "9B", diskGb: 5.5, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -428,10 +419,9 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 4.9,
     contextWindow: 8192,
     tags: ["multilingual"],
-    supportsQuants: true,
     sizes: [
-      { id: "aya-expanse:8b",  params: "8B",  diskGb: 4.9  },
-      { id: "aya-expanse:32b", params: "32B", diskGb: 20.0 },
+      { id: "aya-expanse:8b",  params: "8B",  diskGb: 4.9,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "aya-expanse:32b", params: "32B", diskGb: 20.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -439,15 +429,14 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "olmo2",
     name: "OLMo 2",
-    description: "Allen Institute's fully open model — open weights, training data, and code. Transparent and solid instruction following.",
+    description: "Allen Institute's fully open model — open weights, training data, and code. Solid instruction following.",
     paramSize: "7B",
     diskGb: 4.5,
     contextWindow: 4096,
     tags: [],
-    supportsQuants: true,
     sizes: [
-      { id: "olmo2:7b",  params: "7B",  diskGb: 4.5 },
-      { id: "olmo2:13b", params: "13B", diskGb: 8.2 },
+      { id: "olmo2:7b",  params: "7B",  diskGb: 4.5, quants: ["-q4_K_M", "-q8_0"] },
+      { id: "olmo2:13b", params: "13B", diskGb: 8.2, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -460,10 +449,9 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 5.2,
     contextWindow: 131072,
     tags: [],
-    supportsQuants: true,
     sizes: [
-      { id: "granite3.3:2b", params: "2B", diskGb: 1.7 },
-      { id: "granite3.3:8b", params: "8B", diskGb: 5.2 },
+      { id: "granite3.3:2b", params: "2B", diskGb: 1.7, quants: ["-q4_K_M", "-q8_0"] },
+      { id: "granite3.3:8b", params: "8B", diskGb: 5.2, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -471,16 +459,15 @@ export const HUB_MODELS: HubModel[] = [
   {
     id: "smollm2",
     name: "SmolLM2",
-    description: "Hugging Face's tiny models that punch above their weight. Ideal for edge devices, fast inference, and on-device use.",
+    description: "Hugging Face's tiny models that punch above their weight. Ideal for edge devices and fast inference.",
     paramSize: "1.7B",
     diskGb: 1.1,
     contextWindow: 8192,
     tags: ["fast"],
-    supportsQuants: true,
     sizes: [
       { id: "smollm2:135m", params: "135M", diskGb: 0.3 },
       { id: "smollm2:360m", params: "360M", diskGb: 0.7 },
-      { id: "smollm2:1.7b", params: "1.7B", diskGb: 1.1 },
+      { id: "smollm2:1.7b", params: "1.7B", diskGb: 1.1, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -493,7 +480,6 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 4.5,
     contextWindow: 4096,
     tags: ["vision"],
-    supportsQuants: true,
     sizes: [
       { id: "llava:7b",  params: "7B",  diskGb: 4.5  },
       { id: "llava:13b", params: "13B", diskGb: 8.0  },
@@ -510,11 +496,10 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 3.8,
     contextWindow: 100000,
     tags: ["code"],
-    supportsQuants: true,
     sizes: [
-      { id: "codellama:7b",  params: "7B",  diskGb: 3.8  },
-      { id: "codellama:13b", params: "13B", diskGb: 7.4  },
-      { id: "codellama:34b", params: "34B", diskGb: 19.0 },
+      { id: "codellama:7b",  params: "7B",  diskGb: 3.8,  quants: ["-q4_K_M", "-q5_K_M", "-q8_0"] },
+      { id: "codellama:13b", params: "13B", diskGb: 7.4,  quants: ["-q4_K_M", "-q8_0"] },
+      { id: "codellama:34b", params: "34B", diskGb: 19.0, quants: ["-q4_K_M", "-q8_0"] },
     ],
   },
 
@@ -527,7 +512,6 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 0.27,
     contextWindow: 8192,
     tags: ["embedding", "fast"],
-    supportsQuants: false,
     sizes: [
       { id: "nomic-embed-text", params: "137M", diskGb: 0.27 },
     ],
@@ -542,7 +526,6 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 0.67,
     contextWindow: 512,
     tags: ["embedding"],
-    supportsQuants: false,
     sizes: [
       { id: "mxbai-embed-large", params: "335M", diskGb: 0.67 },
     ],
@@ -557,7 +540,6 @@ export const HUB_MODELS: HubModel[] = [
     diskGb: 1.2,
     contextWindow: 8192,
     tags: ["embedding", "multilingual"],
-    supportsQuants: false,
     sizes: [
       { id: "bge-m3", params: "570M", diskGb: 1.2 },
     ],
