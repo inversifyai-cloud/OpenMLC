@@ -9,6 +9,17 @@ import type { ChatAttachment } from "@/types/chat";
 import { TtsButton } from "./TtsButton";
 import { ArtifactInline } from "./ArtifactInline";
 import { extractArtifacts, type ExtractedArtifact } from "@/lib/artifacts/extract";
+import { useSmoothedText } from "@/hooks/use-smoothed-text";
+
+type MdComponents = React.ComponentProps<typeof ReactMarkdown>["components"];
+
+// Wraps streaming markdown with token-rate smoothing — text appears at a steady
+// CPS rate even though tokens arrive in bursts. When streaming ends, it snaps to
+// the full text instantly.
+function StreamingMarkdown({ text, streaming, components }: { text: string; streaming: boolean; components: MdComponents }) {
+  const smoothed = useSmoothedText(text, streaming);
+  return <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>{smoothed}</ReactMarkdown>;
+}
 
 export type ArtifactRef = {
   id: string;
@@ -900,9 +911,11 @@ export function MessageBubble({
                           ? stripArtifactTags(part.text)
                           : part.text;
                         if (!partText.trim()) return null;
+                        const isLastTextPart = i === textParts.length - 1;
+                        const smoothThis = !!streaming && !isUser && isLastTextPart;
                         return (
                           <div key={i} style={i > 0 ? { marginTop: 8 } : undefined}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD}>{partText}</ReactMarkdown>
+                            <StreamingMarkdown text={partText} streaming={smoothThis} components={MD} />
                           </div>
                         );
                       })}
@@ -911,7 +924,7 @@ export function MessageBubble({
                 ) : (
 
                   cleanText.trim() ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD}>{cleanText}</ReactMarkdown>
+                    <StreamingMarkdown text={cleanText} streaming={!!streaming && !isUser} components={MD} />
                   ) : null
                 )}
 

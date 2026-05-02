@@ -304,10 +304,38 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
 
   }, [modelId]);
 
+  // Smooth auto-scroll: rAF-throttled, eased toward bottom, only when user is
+  // already near the bottom (don't fight them if they scrolled up to read).
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+
+    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const distance = el.scrollHeight - (el.scrollTop + el.clientHeight);
+    const stickThreshold = 200; // px from bottom — beyond this, leave them alone
+    if (distance > stickThreshold) return;
+
+    if (reduce) {
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled || !el) return;
+      const target = el.scrollHeight - el.clientHeight;
+      const cur = el.scrollTop;
+      const delta = target - cur;
+      if (Math.abs(delta) < 1) return;
+      // Eased: cover ~22% of remaining distance per frame → smooth glide.
+      el.scrollTop = cur + delta * 0.22;
+      requestAnimationFrame(tick);
+    };
+    const id = requestAnimationFrame(tick);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(id);
+    };
   }, [messages, status, swarm.status]);
 
   // search-flash: deep-link from /search?msg=… → scroll + pulse the target row
