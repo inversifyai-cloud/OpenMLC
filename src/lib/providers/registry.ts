@@ -75,6 +75,73 @@ export const models: Model[] = [
     capabilities: ["text", "code", "reasoning", "tools"],
     bestFor: "Math & logic", costTier: "medium",
   },
+  {
+    id: "o1", name: "o1", providerId: "openai", providerModelId: "o1",
+    description: "First-gen frontier reasoning model. Slow, deep, deliberate.", contextWindow: 200000,
+    capabilities: ["text", "vision", "code", "reasoning"],
+    bestFor: "Hard problems", costTier: "high",
+  },
+  {
+    id: "o1-pro", name: "o1 pro", providerId: "openai", providerModelId: "o1-pro",
+    description: "Pro tier o1 — extended compute for the hardest problems.", contextWindow: 200000,
+    capabilities: ["text", "vision", "code", "reasoning"],
+    bestFor: "Research & deep analysis", costTier: "high",
+  },
+  {
+    id: "o1-mini", name: "o1 mini", providerId: "openai", providerModelId: "o1-mini",
+    description: "Faster, cheaper reasoning — strong at STEM tasks.", contextWindow: 128000,
+    capabilities: ["text", "code", "reasoning"],
+    bestFor: "STEM reasoning", costTier: "medium",
+  },
+  {
+    id: "o1-preview", name: "o1 preview", providerId: "openai", providerModelId: "o1-preview",
+    description: "Original o1 preview release.", contextWindow: 128000,
+    capabilities: ["text", "code", "reasoning"],
+    bestFor: "Reasoning", costTier: "high",
+  },
+
+  {
+    id: "chatgpt-4o-latest", name: "ChatGPT-4o (latest)", providerId: "openai", providerModelId: "chatgpt-4o-latest",
+    description: "Always-fresh checkpoint of the model behind ChatGPT.", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "Conversational, up-to-date", costTier: "medium",
+  },
+  {
+    id: "gpt-4-turbo", name: "GPT-4 Turbo", providerId: "openai", providerModelId: "gpt-4-turbo",
+    description: "Previous-gen flagship, still strong for analysis.", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "Legacy compatibility", costTier: "high",
+  },
+  {
+    id: "gpt-4", name: "GPT-4", providerId: "openai", providerModelId: "gpt-4",
+    description: "The classic. 8K context, no vision, no tools.", contextWindow: 8192,
+    capabilities: ["text", "code"],
+    bestFor: "Legacy", costTier: "high",
+  },
+  {
+    id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", providerId: "openai", providerModelId: "gpt-3.5-turbo",
+    description: "Cheap and fast. Good for high-volume simple tasks.", contextWindow: 16385,
+    capabilities: ["text", "code", "tools"],
+    bestFor: "Volume + cost", costTier: "low",
+  },
+  {
+    id: "gpt-4o-search-preview", name: "GPT-4o (search preview)", providerId: "openai", providerModelId: "gpt-4o-search-preview",
+    description: "GPT-4o with built-in web search grounding.", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "Live web answers", costTier: "medium",
+  },
+  {
+    id: "gpt-4o-mini-search-preview", name: "GPT-4o mini (search preview)", providerId: "openai", providerModelId: "gpt-4o-mini-search-preview",
+    description: "GPT-4o mini with built-in web search grounding.", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "Cheap web answers", costTier: "low",
+  },
+  {
+    id: "gpt-4o-audio-preview", name: "GPT-4o (audio preview)", providerId: "openai", providerModelId: "gpt-4o-audio-preview",
+    description: "GPT-4o with audio input/output.", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "Audio chat", costTier: "medium",
+  },
 
   {
     id: "claude-opus-4-6", name: "Claude Opus 4.6", providerId: "anthropic", providerModelId: "claude-opus-4-6",
