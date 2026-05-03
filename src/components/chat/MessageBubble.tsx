@@ -11,6 +11,8 @@ import { ArtifactInline } from "./ArtifactInline";
 import { extractArtifacts, type ExtractedArtifact } from "@/lib/artifacts/extract";
 import { useSmoothedText } from "@/hooks/use-smoothed-text";
 import { CodeBlock } from "./CodeBlock";
+import { ModelAvatar } from "./ModelAvatar";
+import { VariantPager } from "./VariantPager";
 
 type MdComponents = React.ComponentProps<typeof ReactMarkdown>["components"];
 
@@ -753,7 +755,11 @@ export function MessageBubble({
         {isUser ? (
           <div className="avatar you">{(profileMonogram ?? "·").slice(0, 3)}</div>
         ) : (
-          <div className="avatar ai">M·L</div>
+          <ModelAvatar
+            modelId={modelId}
+            providerId={model?.providerId}
+            state={streaming ? "stream" : "idle"}
+          />
         )}
 
         <div className="body">
@@ -987,48 +993,14 @@ export function MessageBubble({
 
                 {streaming && <span className="cursor" />}
 
-                {/* reroll-feature: variant pager (only when > 1 sibling) */}
                 {!streaming && variants && variants.count > 1 && (
-                  <div
-                    className="variant-pager"
-                    role="group"
-                    aria-label="Response variants"
-                    style={{
-                      marginTop: 8,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      color: "var(--fg-3)",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className="branch-btn"
-                      onClick={variants.onPrev}
-                      disabled={variants.current <= 1}
-                      aria-label="Previous variant"
-                      title="Previous variant"
-                      style={{ padding: "2px 6px" }}
-                    >
-                      ‹
-                    </button>
-                    <span aria-live="polite">
-                      {variants.current} of {variants.count}
-                    </span>
-                    <button
-                      type="button"
-                      className="branch-btn"
-                      onClick={variants.onNext}
-                      disabled={variants.current >= variants.count}
-                      aria-label="Next variant"
-                      title="Next variant"
-                      style={{ padding: "2px 6px" }}
-                    >
-                      ›
-                    </button>
-                  </div>
+                  <VariantPager
+                    current={variants.current}
+                    count={variants.count}
+                    onPrev={variants.onPrev}
+                    onNext={variants.onNext}
+                    keyboard
+                  />
                 )}
               </>
             )}
