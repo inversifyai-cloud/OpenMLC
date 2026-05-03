@@ -35,7 +35,7 @@ const BRANDS: Record<string, Brand> = {
   fireworks:  { mono: "F", hue: "20"  }, // ember orange
   openrouter: { mono: "R", hue: "300" }, // purple
   ollama:     { mono: "L", hue: "20"  }, // ollama orange
-  custom:     { mono: "M", hue: "200" }, // teal
+  custom:     { mono: "M", hue: "140" }, // green
 };
 
 // Try to extract a sensible monogram from the model id when we don't recognize the provider.

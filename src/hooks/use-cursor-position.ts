@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 
 export interface CursorPosition {
   x: number;
@@ -9,44 +9,42 @@ export interface CursorPosition {
 
 export function useCursorPosition(): CursorPosition {
   const [position, setPosition] = useState<CursorPosition>({ x: 0, y: 0 });
-  const [target, setTarget] = useState<CursorPosition>({ x: 0, y: 0 });
+  // Use a ref for the lerp target so the rAF closure always reads the latest value.
+  const targetRef = useRef<CursorPosition>({ x: 0, y: 0 });
 
   useEffect(() => {
-    // Check for coarse pointer (touch devices)
-    const coarsePointerMediaQuery = window.matchMedia("(pointer: coarse)");
-    if (coarsePointerMediaQuery.matches) {
-      return;
-    }
+    if (window.matchMedia("(pointer: coarse)").matches) return;
 
-    // Initialize to viewport center
-    const initX = typeof window !== "undefined" ? window.innerWidth / 2 : 0;
-    const initY = typeof window !== "undefined" ? window.innerHeight / 2 : 0;
+    const initX = window.innerWidth / 2;
+    const initY = window.innerHeight / 2;
+    targetRef.current = { x: initX, y: initY };
     setPosition({ x: initX, y: initY });
-    setTarget({ x: initX, y: initY });
 
     function handleMouseMove(e: MouseEvent) {
-      setTarget({ x: e.clientX, y: e.clientY });
+      targetRef.current = { x: e.clientX, y: e.clientY };
     }
-
     window.addEventListener("mousemove", handleMouseMove);
 
-    // rAF loop for eased lerp
-    let animationFrameId: number;
-    const easeLoop = () => {
-      setPosition((current) => {
-        const factor = 0.08; // ~120ms follow lag
-        return {
-          x: current.x + (target.x - current.x) * factor,
-          y: current.y + (target.y - current.y) * factor,
-        };
-      });
-      animationFrameId = requestAnimationFrame(easeLoop);
-    };
-    animationFrameId = requestAnimationFrame(easeLoop);
+    const FACTOR = 0.08;
+    const EPSILON = 0.5;
+    let posX = initX, posY = initY;
+    let rafId: number;
+
+    function easeLoop() {
+      const dx = targetRef.current.x - posX;
+      const dy = targetRef.current.y - posY;
+      if (Math.abs(dx) > EPSILON || Math.abs(dy) > EPSILON) {
+        posX += dx * FACTOR;
+        posY += dy * FACTOR;
+        setPosition({ x: posX, y: posY });
+      }
+      rafId = requestAnimationFrame(easeLoop);
+    }
+    rafId = requestAnimationFrame(easeLoop);
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      cancelAnimationFrame(animationFrameId);
+      cancelAnimationFrame(rafId);
     };
   }, []);
 

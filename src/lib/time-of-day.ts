@@ -28,7 +28,7 @@ export function getTimeOfDay(date?: Date): TimeOfDay {
     return {
       period: "afternoon",
       greeting: "Afternoon —",
-      accentHue: 200, // cool blue
+      accentHue: 140, // green
     };
   }
 

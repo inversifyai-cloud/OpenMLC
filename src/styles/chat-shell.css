@@ -9,6 +9,7 @@
   overflow: hidden;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  position: relative;
 }
 @media (min-width: 768px) {
   .chat-app {
@@ -491,7 +492,7 @@
 /* ── ModelAvatar (Phase 2) — model-aware brand identity ──────────────── */
 .model-avatar {
   --avatar-size: 28px;
-  --avatar-hue: 200;
+  --avatar-hue: 140;
   width: var(--avatar-size);
   height: var(--avatar-size);
   flex-shrink: 0;
@@ -3066,8 +3067,10 @@
   justify-content: center;
   position: relative;
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   z-index: 0;
+  padding: 40px 24px;
+  box-sizing: border-box;
 }
 
 .empty-state-v2__content {
@@ -3210,65 +3213,90 @@
 }
 
 /* ── Phase 3: Focus / Zen Mode ─────────────────── */
+/*
+ * Layout model: .chat-app is a CSS grid with columns "240px 1fr" on desktop.
+ * `transform` on a grid item doesn't collapse its allocated column. Instead,
+ * we switch the sidebar to `position: absolute` in focus/zen mode and
+ * give `.main` `grid-column: 1 / -1` so it fills the full row.
+ */
 
-/* Focus level — chrome compresses */
-:root[data-focus="focus"] .sidebar {
-  transform: translateX(-100%);
-  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+@media (min-width: 768px) {
+  /* Focus: sidebar floats out of the grid, slides in on hover */
+  :root[data-focus="focus"] .sidebar {
+    position: absolute;
+    left: 0;
+    top: 40px; /* below 40px topbar row */
+    height: calc(100dvh - 40px);
+    width: 240px;
+    z-index: 30;
+    transform: translateX(-240px);
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  :root[data-focus="focus"] .sidebar:hover,
+  :root[data-focus="focus"] .sidebar:focus-within {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px -4px oklch(0 0 0 / 0.22);
+  }
+
+  /* Hairline sliver on left edge to invite hover */
+  :root[data-focus="focus"] .chat-app::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 40px;
+    width: 4px;
+    height: calc(100dvh - 40px);
+    background: var(--fg-accent);
+    opacity: 0.35;
+    z-index: 31;
+    cursor: e-resize;
+  }
+
+  /* Main fills full width when sidebar is pulled out of flow */
+  :root[data-focus="focus"] .main,
+  :root[data-focus="zen"] .main {
+    grid-column: 1 / -1;
+  }
+
+  /* Hide topbar nav in focus to tighten chrome */
+  :root[data-focus="focus"] .topbar-nav {
+    display: none;
+  }
+
+  /* Zen: topbar + sidebar fully gone, main fills entire viewport */
+  :root[data-focus="zen"] .topbar {
+    display: none;
+  }
+  :root[data-focus="zen"] .sidebar {
+    display: none;
+  }
+  :root[data-focus="zen"] .main {
+    grid-row: 1 / -1;
+  }
 }
 
-:root[data-focus="focus"] .sidebar:hover,
-:root[data-focus="focus"] .sidebar:focus-within {
-  transform: translateX(0);
-}
-
-/* Sliver to hover into */
-:root[data-focus="focus"] .sidebar::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: -8px;
-  width: 8px;
-  height: 100%;
-  cursor: e-resize;
-}
-
-:root[data-focus="focus"] .topbar {
-  height: 28px;
-  font-size: 11px;
-}
-
-/* Right panel (artifacts pane) collapses too */
-:root[data-focus="focus"] .artifacts-pane {
-  transform: translateX(100%);
-  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-:root[data-focus="focus"] .artifacts-pane:hover {
-  transform: translateX(0);
-}
-
-/* Zen level — everything hides; only the thread + composer */
-:root[data-focus="zen"] .topbar,
-:root[data-focus="zen"] .sidebar,
-:root[data-focus="zen"] .artifacts-pane {
-  display: none;
-}
-
-:root[data-focus="zen"] .messages,
-:root[data-focus="zen"] .composer-wrap {
+/* Zen reading improvements — tighter focused column */
+:root[data-focus="zen"] .messages {
   max-width: 720px;
   margin-left: auto;
   margin-right: auto;
 }
 
+:root[data-focus="zen"] .composer-wrap {
+  max-width: 760px;
+}
+
 :root[data-focus="zen"] .text {
-  line-height: 1.75;
+  line-height: 1.78;
   font-size: 15.5px;
 }
 
-:root[data-focus="zen"] body {
-  background: color-mix(in oklch, var(--bg-app, var(--bg-canvas)) 96%, black);
+/* Focus/Zen: suppress open artifacts pane */
+:root[data-focus="focus"] .artifacts-pane.open,
+:root[data-focus="zen"] .artifacts-pane {
+  transform: translateX(100%) !important;
 }
 
 /* Focus toggle button */
@@ -3292,9 +3320,14 @@
   background: color-mix(in oklch, var(--fg-1) 6%, transparent);
 }
 
+/* When in focus mode, highlight the toggle button */
+:root[data-focus="focus"] .focus-toggle-btn,
+:root[data-focus="zen"] .focus-toggle-btn {
+  color: var(--fg-accent);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  :root[data-focus="focus"] .sidebar,
-  :root[data-focus="focus"] .artifacts-pane {
+  :root[data-focus="focus"] .sidebar {
     transition: none !important;
   }
 }
@@ -3431,7 +3464,7 @@
 
 /* Breathing cursor (replaces .cursor) */
 .stream-cursor {
-  --cursor-hue: 200;
+  --cursor-hue: 140;
   display: inline-block;
   width: 7px;
   height: 14px;
@@ -3448,7 +3481,7 @@
 .stream-cursor[data-provider="google"]     { --cursor-hue: 240; }
 .stream-cursor[data-provider="fireworks"]  { --cursor-hue: 20; }
 .stream-cursor[data-provider="ollama"]     { --cursor-hue: 20; }
-.stream-cursor[data-provider="custom"]     { --cursor-hue: 200; }
+.stream-cursor[data-provider="custom"]     { --cursor-hue: 140; }
 .stream-cursor[data-provider="xai"],
 .stream-cursor[data-provider="unknown"]    { background: var(--fg-1); box-shadow: none; }
 
@@ -3628,7 +3661,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 0;
+  padding: 2px 14px 6px;
   gap: 12px;
 }
 
