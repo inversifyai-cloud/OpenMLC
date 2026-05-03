@@ -142,6 +142,126 @@ export const models: Model[] = [
     capabilities: ["text", "vision", "code", "tools"],
     bestFor: "Audio chat", costTier: "medium",
   },
+  {
+    id: "gpt-4o-mini-audio-preview", name: "GPT-4o mini (audio preview)", providerId: "openai", providerModelId: "gpt-4o-mini-audio-preview",
+    description: "Cheap audio I/O variant.", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "Cheap audio chat", costTier: "low",
+  },
+
+  // GPT-5 base lineup (in addition to the 5.4 / 5.2 point releases above)
+  {
+    id: "gpt-5", name: "GPT-5", providerId: "openai", providerModelId: "gpt-5",
+    description: "GPT-5 base — flagship general-purpose model.", contextWindow: 200000,
+    capabilities: ["text", "vision", "code", "reasoning", "tools"],
+    bestFor: "Best quality default", costTier: "high",
+  },
+  {
+    id: "gpt-5-mini", name: "GPT-5 mini", providerId: "openai", providerModelId: "gpt-5-mini",
+    description: "Smaller, cheaper GPT-5 with vision and tools.", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "Everyday smart", costTier: "medium",
+  },
+  {
+    id: "gpt-5-nano", name: "GPT-5 nano", providerId: "openai", providerModelId: "gpt-5-nano",
+    description: "Smallest GPT-5 — ultra-fast.", contextWindow: 128000,
+    capabilities: ["text", "code"],
+    bestFor: "High-volume cheap", costTier: "low",
+  },
+  {
+    id: "gpt-5-pro", name: "GPT-5 pro", providerId: "openai", providerModelId: "gpt-5-pro",
+    description: "Pro tier GPT-5 — extended compute for hardest tasks.", contextWindow: 200000,
+    capabilities: ["text", "vision", "code", "reasoning", "tools"],
+    bestFor: "Frontier tasks", costTier: "high",
+  },
+  {
+    id: "gpt-5-chat-latest", name: "GPT-5 chat (latest)", providerId: "openai", providerModelId: "gpt-5-chat-latest",
+    description: "Rolling checkpoint of the chat-tuned GPT-5.", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "ChatGPT-style conversation", costTier: "medium",
+  },
+
+  // o-series extensions
+  {
+    id: "o3-pro", name: "o3 pro", providerId: "openai", providerModelId: "o3-pro",
+    description: "Pro tier o3 — extended reasoning compute.", contextWindow: 200000,
+    capabilities: ["text", "vision", "code", "reasoning", "tools"],
+    bestFor: "Hardest analysis", costTier: "high",
+  },
+  {
+    id: "o3-deep-research", name: "o3 deep research", providerId: "openai", providerModelId: "o3-deep-research",
+    description: "Multi-step research model — long autonomous searches.", contextWindow: 200000,
+    capabilities: ["text", "vision", "code", "reasoning", "tools"],
+    bestFor: "Deep research reports", costTier: "high",
+  },
+  {
+    id: "o4-mini-deep-research", name: "o4 mini deep research", providerId: "openai", providerModelId: "o4-mini-deep-research",
+    description: "Cheaper deep-research model.", contextWindow: 200000,
+    capabilities: ["text", "vision", "code", "reasoning", "tools"],
+    bestFor: "Deep research, lower cost", costTier: "medium",
+  },
+
+  // Computer use
+  {
+    id: "computer-use-preview", name: "Computer use (preview)", providerId: "openai", providerModelId: "computer-use-preview",
+    description: "GPT-4o variant tuned for computer-use agent tasks.", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "reasoning", "tools"],
+    bestFor: "Computer agent control", costTier: "medium",
+  },
+
+  // GPT-4 legacy variants
+  {
+    id: "gpt-4-32k", name: "GPT-4 32k", providerId: "openai", providerModelId: "gpt-4-32k",
+    description: "Classic GPT-4 with 32K context.", contextWindow: 32768,
+    capabilities: ["text", "code"],
+    bestFor: "Legacy long-context", costTier: "high",
+  },
+  {
+    id: "gpt-4-turbo-preview", name: "GPT-4 Turbo (preview)", providerId: "openai", providerModelId: "gpt-4-turbo-preview",
+    description: "Earlier GPT-4 Turbo preview release.", contextWindow: 128000,
+    capabilities: ["text", "code", "tools"],
+    bestFor: "Legacy", costTier: "high",
+  },
+  {
+    id: "gpt-4-vision-preview", name: "GPT-4 Vision (preview)", providerId: "openai", providerModelId: "gpt-4-vision-preview",
+    description: "First GPT-4 with image input.", contextWindow: 128000,
+    capabilities: ["text", "vision", "code"],
+    bestFor: "Legacy vision", costTier: "high",
+  },
+
+  // GPT-3.5 variants
+  {
+    id: "gpt-3.5-turbo-16k", name: "GPT-3.5 Turbo 16k", providerId: "openai", providerModelId: "gpt-3.5-turbo-16k",
+    description: "GPT-3.5 with 16K context.", contextWindow: 16385,
+    capabilities: ["text", "code", "tools"],
+    bestFor: "Volume + longer context", costTier: "low",
+  },
+  {
+    id: "gpt-3.5-turbo-instruct", name: "GPT-3.5 instruct", providerId: "openai", providerModelId: "gpt-3.5-turbo-instruct",
+    description: "Completion-style GPT-3.5 (not chat) — for legacy prompts.", contextWindow: 4096,
+    capabilities: ["text", "code"],
+    bestFor: "Single-shot completions", costTier: "low",
+  },
+
+  // Realtime — note: requires WebSocket transport, may not work via chat completions
+  {
+    id: "gpt-realtime", name: "GPT realtime", providerId: "openai", providerModelId: "gpt-realtime",
+    description: "Low-latency realtime model (WebSocket API).", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "Realtime voice", costTier: "high",
+  },
+  {
+    id: "gpt-4o-realtime-preview", name: "GPT-4o realtime (preview)", providerId: "openai", providerModelId: "gpt-4o-realtime-preview",
+    description: "Realtime preview of GPT-4o (WebSocket API).", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "Realtime voice", costTier: "high",
+  },
+  {
+    id: "gpt-4o-mini-realtime-preview", name: "GPT-4o mini realtime (preview)", providerId: "openai", providerModelId: "gpt-4o-mini-realtime-preview",
+    description: "Realtime preview of GPT-4o mini (WebSocket API).", contextWindow: 128000,
+    capabilities: ["text", "vision", "code", "tools"],
+    bestFor: "Cheap realtime", costTier: "medium",
+  },
 
   {
     id: "claude-opus-4-6", name: "Claude Opus 4.6", providerId: "anthropic", providerModelId: "claude-opus-4-6",
