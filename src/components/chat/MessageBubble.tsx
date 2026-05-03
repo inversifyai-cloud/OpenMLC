@@ -2,7 +2,9 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useMemo, useState } from "react";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import { useMemo, useState, useEffect } from "react";
 import { getModel } from "@/lib/providers/registry";
 import { isImage } from "@/lib/mime";
 import type { ChatAttachment } from "@/types/chat";
@@ -16,12 +18,32 @@ import { VariantPager } from "./VariantPager";
 
 type MdComponents = React.ComponentProps<typeof ReactMarkdown>["components"];
 
+// Module-level flag to guard lazy KaTeX CSS import
+let katexCssLoaded = false;
+
 // Wraps streaming markdown with token-rate smoothing — text appears at a steady
 // CPS rate even though tokens arrive in bursts. When streaming ends, it snaps to
 // the full text instantly.
 function StreamingMarkdown({ text, streaming, components }: { text: string; streaming: boolean; components: MdComponents }) {
   const smoothed = useSmoothedText(text, streaming);
-  return <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>{smoothed}</ReactMarkdown>;
+
+  // Lazy-load KaTeX CSS only when needed
+  useEffect(() => {
+    if (typeof window !== "undefined" && !katexCssLoaded && /\$/.test(text)) {
+      katexCssLoaded = true;
+      import("katex/dist/katex.min.css").catch(() => {});
+    }
+  }, [text]);
+
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeKatex]}
+      components={components}
+    >
+      {smoothed}
+    </ReactMarkdown>
+  );
 }
 
 export type ArtifactRef = {
@@ -639,8 +661,8 @@ function buildMD(streaming: boolean): React.ComponentProps<typeof ReactMarkdown>
   },
   p: ({ children }) => <p>{children}</p>,
   table: ({ children }) => (
-    <div style={{ overflowX: "auto", margin: "12px 0" }}>
-      <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>{children}</table>
+    <div className="md-table-wrap">
+      <table className="md-table">{children}</table>
     </div>
   ),
   th: ({ children }) => (
@@ -650,17 +672,39 @@ function buildMD(streaming: boolean): React.ComponentProps<typeof ReactMarkdown>
     <td style={{ padding: "6px 12px", borderBottom: "1px solid var(--stroke-1)", color: "var(--fg-1)", verticalAlign: "top" }}>{children}</td>
   ),
   h1: ({ children }) => <h1 style={{ fontSize: 20, fontWeight: 600, margin: "16px 0 8px", color: "var(--fg-1)", letterSpacing: "-0.02em" }}>{children}</h1>,
-  h2: ({ children }) => <h2 style={{ fontSize: 16, fontWeight: 600, margin: "14px 0 6px", color: "var(--fg-1)" }}>{children}</h2>,
-  h3: ({ children }) => <h3 style={{ fontSize: 14, fontWeight: 500, margin: "12px 0 4px", color: "var(--fg-1)" }}>{children}</h3>,
+  h2: ({ children }) => <h2 className="md-heading" style={{ fontSize: 16, fontWeight: 600, margin: "14px 0 6px", color: "var(--fg-1)" }}>{children}</h2>,
+  h3: ({ children }) => <h3 className="md-heading" style={{ fontSize: 14, fontWeight: 500, margin: "12px 0 4px", color: "var(--fg-1)" }}>{children}</h3>,
   ul: ({ children }) => <ul style={{ margin: "8px 0", paddingLeft: 20, lineHeight: 1.7 }}>{children}</ul>,
   ol: ({ children }) => <ol style={{ margin: "8px 0", paddingLeft: 20, lineHeight: 1.7 }}>{children}</ol>,
-  li: ({ children }) => <li style={{ margin: "2px 0", color: "var(--fg-1)" }}>{children}</li>,
+  li: ({ children }) => {
+    // Detect GFM task lists: check if first child is <input type="checkbox">
+    const childArray = Array.isArray(children) ? children : [children];
+    const firstChild = childArray[0];
+    const isTaskList = firstChild && typeof firstChild === "object" && "props" in firstChild &&
+      (firstChild as { type?: string; props?: { type?: string } }).type === "input" &&
+      (firstChild as { type?: string; props?: { type?: string } }).props?.type === "checkbox";
+
+    if (isTaskList) {
+      return (
+        <li className="md-task-li" style={{ margin: "4px 0" }}>
+          {children}
+        </li>
+      );
+    }
+    return (
+      <li className="md-li" style={{ margin: "2px 0", color: "var(--fg-1)" }}>
+        {children}
+      </li>
+    );
+  },
   blockquote: ({ children }) => (
-    <blockquote style={{ margin: "12px 0", paddingLeft: 14, borderLeft: "2px solid var(--stroke-2)", color: "var(--fg-3)", fontStyle: "italic" }}>{children}</blockquote>
+    <blockquote className="md-blockquote">
+      {children}
+    </blockquote>
   ),
   hr: () => <hr style={{ border: 0, borderTop: "1px solid var(--stroke-1)", margin: "16px 0" }} />,
   a: ({ href, children }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer"
+    <a href={href} target="_blank" rel="noopener noreferrer" className="md-link"
       style={{ color: "var(--fg-accent)", textDecoration: "underline", textUnderlineOffset: 3 }}>
       {children}
     </a>
