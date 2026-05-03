@@ -750,7 +750,7 @@ export function MessageBubble({
   const hasRichParts = processParts.length > 0 || textParts.length > 0;
 
   return (
-    <div className="msg-wrap">
+    <div className="msg-wrap" data-message-id={messageId ?? undefined} data-role={role}>
       <div className="msg">
         {isUser ? (
           <div className="avatar you">{(profileMonogram ?? "·").slice(0, 3)}</div>

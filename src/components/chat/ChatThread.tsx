@@ -7,6 +7,7 @@ import type { UIMessage } from "ai";
 import { useRouter } from "next/navigation";
 import { MessageBubble, type AnyPart, type ArtifactRef } from "./MessageBubble";
 import { ChatComposer, type PendingAttachment, type ReasoningEffort } from "./ChatComposer";
+import { SelectionChips } from "./SelectionChips";
 import { SystemPromptEditor } from "./SystemPromptEditor";
 import { SwarmInlineView } from "@/components/swarm/SwarmInlineView";
 import { ArtifactsPane, type ArtifactData } from "./ArtifactsPane";
@@ -61,6 +62,35 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
   const [systemPrompt, setSystemPrompt] = useState(initialSystemPrompt);
   const [personaId, setPersonaId] = useState<string | null>(initialPersonaId);
   const [input, setInput] = useState("");
+  // Selection chips → composer routing. SelectionChips dispatches a window
+  // CustomEvent("composer:insert") with { kind: "quote" | "ask", text }.
+  // We append to the current input (rather than replace) so users can stack
+  // quotes or quote-then-write-question.
+  useEffect(() => {
+    function onInsert(e: Event) {
+      const detail = (e as CustomEvent<{ kind: "quote" | "ask"; text: string }>).detail;
+      if (!detail) return;
+      const { kind, text } = detail;
+      const quoted = text
+        .split("\n")
+        .map((line) => `> ${line}`)
+        .join("\n");
+      const block =
+        kind === "quote"
+          ? `${quoted}\n\n`
+          : `${quoted}\n\n`; // both prepend the quote; "ask" leaves cursor after for the question
+      setInput((prev) => (prev ? `${block}${prev}` : block));
+      // Focus the textarea on next tick
+      requestAnimationFrame(() => {
+        const ta = document.querySelector<HTMLTextAreaElement>("textarea[name='msg-input'], .composer-area textarea");
+        ta?.focus();
+        // Move caret to end so the user can start typing the follow-up
+        if (ta) ta.setSelectionRange(ta.value.length, ta.value.length);
+      });
+    }
+    window.addEventListener("composer:insert", onInsert);
+    return () => window.removeEventListener("composer:insert", onInsert);
+  }, []);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("off");
@@ -675,6 +705,7 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
 
   return (
     <main className="main">
+        <SelectionChips />
         <div className="main-head">
           <div className="thread-title">
             <span className="title-text">{initialTitle || "untitled"}</span>
