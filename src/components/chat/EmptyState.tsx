@@ -1,7 +1,6 @@
 "use client";
 
 import { getTimeOfDay } from "@/lib/time-of-day";
-import { AmbientOrb } from "./AmbientOrb";
 
 type Props = {
   modelLabel?: string | null;
@@ -28,8 +27,6 @@ export function EmptyState({
 
   return (
     <div className="empty-state-v2">
-      <AmbientOrb hue={accentHue} />
-
       <div className="empty-state-v2__content">
         <h1 className="empty-state-v2__greeting">
           {greeting}

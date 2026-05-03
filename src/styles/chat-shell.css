@@ -3171,26 +3171,6 @@
   }
 }
 
-.ambient-orb {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.ambient-orb__blob {
-  width: 800px;
-  height: 800px;
-  background: radial-gradient(
-    closest-side,
-    oklch(0.65 0.18 var(--orb-hue) / 0.28),
-    transparent
-  );
-  will-change: transform;
-  transition: none;
-}
-
 .empty-state-v2__noise {
   position: absolute;
   inset: 0;
@@ -3204,10 +3184,6 @@
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
-  }
-
-  .ambient-orb {
-    display: none;
   }
 }
 
