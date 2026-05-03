@@ -262,15 +262,9 @@
 .conv.active {
   background: var(--surface-selected);
 }
-.conv.active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 2px;
-  background: var(--fg-accent);
-}
+/* Static active-bar pseudo-element disabled — replaced by the shared
+   spring-driven .sidebar-active-bar that slides between rows. */
+.conv.active::before { content: none; }
 .conv .title {
   font-size: 13px;
   font-weight: 500;
@@ -3643,3 +3637,58 @@
   .drop-overlay__panel,
   .draft-toast { animation: none !important; transition: none !important; }
 }
+
+/* ── Phase 7.1: Sidebar Life — sliding active bar + hover lift ────── */
+
+/* Make conv-list a positioning context for the shared active bar */
+.conv-list { position: relative; }
+
+/* Shared sliding accent bar — single DOM node, transform-only */
+.sidebar-active-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--fg-accent) 10%,
+    color-mix(in oklch, var(--fg-accent) 60%, transparent) 90%
+  );
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 1;
+  will-change: transform, height;
+  box-shadow: 0 0 6px color-mix(in oklch, var(--fg-accent) 40%, transparent);
+}
+
+/* Conv row: subtle hover lift via transform (not layout) */
+.conv {
+  transition:
+    background 160ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms ease;
+}
+.conv:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.12);
+}
+.conv:active {
+  transform: translateY(0);
+  transition-duration: 80ms;
+}
+
+/* Pinned rows get a tiny accent dot before the title */
+.conv.conv--pinned .title::before {
+  content: "•";
+  color: var(--fg-accent);
+  margin-right: 6px;
+  opacity: 0.7;
+  text-shadow: 0 0 6px color-mix(in oklch, var(--fg-accent) 50%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conv,
+  .sidebar-active-bar { transition: none !important; }
+  .conv:hover { transform: none; box-shadow: none; }
+}
+

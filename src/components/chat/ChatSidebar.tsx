@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { AvatarMonogram } from "@/components/chrome/AvatarMonogram";
 import { LogoutButton } from "./LogoutButton";
 import { FolderManager, type Folder } from "./FolderManager";
 import { ConvContextMenu } from "./ConvContextMenu";
+import { SidebarActiveBar } from "./SidebarActiveBar";
 import type { ConversationSummary } from "@/types/chat";
 import type { AvatarAccent } from "@/types/profile";
 import { getModel } from "@/lib/providers/registry";
@@ -97,6 +98,7 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
   const [filter, setFilter] = useState("");
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
+  const convListRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
   const [shareToast, setShareToast] = useState<string | null>(null);
   // [spaces] light list of spaces for the in-space subhead.
@@ -294,7 +296,8 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
           <span className="kbd">⌘K</span>
         </div>
 
-        <div className="conv-list">
+        <div className="conv-list" ref={convListRef}>
+          <SidebarActiveBar containerRef={convListRef} activeId={activeId ?? null} />
           {buckets.length === 0 && spaceGroups.length === 0 && (
             <div style={{ padding: "32px 16px", color: "var(--fg-3)", fontSize: 13, textAlign: "center" }}>
               {filter ? "no matches" : "no conversations yet"}
@@ -315,6 +318,7 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
                   href={`/chat/${c.id}`}
                   prefetch
                   className={`conv ${activeId === c.id ? "active" : ""}${c.pinned ? " conv--pinned" : ""}`}
+                  data-conv-id={c.id}
                   onContextMenu={(e) => handleContextMenu(e, c)}
                 >
                   <span className="title">{c.title || "untitled"}</span>
@@ -340,6 +344,7 @@ export function ChatSidebar({ initialConversations, profile }: Props) {
                   href={`/chat/${c.id}`}
                   prefetch
                   className={`conv ${activeId === c.id ? "active" : ""}${c.pinned ? " conv--pinned" : ""}`}
+                  data-conv-id={c.id}
                   onContextMenu={(e) => handleContextMenu(e, c)}
                 >
                   <span className="title">{c.title || "untitled"}</span>
