@@ -2,7 +2,7 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { getModel } from "@/lib/providers/registry";
 import { isImage } from "@/lib/mime";
 import type { ChatAttachment } from "@/types/chat";
@@ -10,6 +10,7 @@ import { TtsButton } from "./TtsButton";
 import { ArtifactInline } from "./ArtifactInline";
 import { extractArtifacts, type ExtractedArtifact } from "@/lib/artifacts/extract";
 import { useSmoothedText } from "@/hooks/use-smoothed-text";
+import { CodeBlock } from "./CodeBlock";
 
 type MdComponents = React.ComponentProps<typeof ReactMarkdown>["components"];
 
@@ -590,12 +591,48 @@ function SourceChips({ parts }: { parts: AnyPart[] }) {
   );
 }
 
-const MD: React.ComponentProps<typeof ReactMarkdown>["components"] = {
-  pre: ({ children }) => <pre>{children}</pre>,
+// Pull the raw text out of whatever ReactMarkdown handed us as `children`.
+// For fenced blocks, this is typically a single string in an array.
+function childrenToString(children: React.ReactNode): string {
+  if (typeof children === "string") return children;
+  if (Array.isArray(children)) return children.map(childrenToString).join("");
+  if (children && typeof children === "object" && "props" in children) {
+    const c = (children as { props?: { children?: React.ReactNode } }).props?.children;
+    return childrenToString(c);
+  }
+  return "";
+}
+
+// `language-ts file=foo.ts` → { lang: "ts", filename: "foo.ts" }
+function parseLangSpec(className: string | undefined): { lang: string; filename?: string } {
+  const raw = (className ?? "").replace(/^language-/, "").trim();
+  if (!raw) return { lang: "" };
+  const [lang, ...rest] = raw.split(/\s+/);
+  const fileTag = rest.find((p) => p.startsWith("file="));
+  return { lang, filename: fileTag?.slice("file=".length) || undefined };
+}
+
+function buildMD(streaming: boolean): React.ComponentProps<typeof ReactMarkdown>["components"] {
+  return {
+  pre: ({ children }) => {
+    // ReactMarkdown wraps fenced blocks in <pre><code class="language-x">...</code></pre>.
+    // We unwrap and route to <CodeBlock> so we can own the chrome + highlighting.
+    if (children && typeof children === "object" && "props" in children) {
+      const codeProps = (children as { props?: { className?: string; children?: React.ReactNode } }).props;
+      const { lang, filename } = parseLangSpec(codeProps?.className);
+      const code = childrenToString(codeProps?.children).replace(/\n$/, "");
+      return <CodeBlock code={code} lang={lang} filename={filename} streaming={streaming} />;
+    }
+    return <pre>{children}</pre>;
+  },
   code: ({ className, children }: { className?: string; children?: React.ReactNode }) => {
+    // Only inline code reaches here in practice (block code is intercepted by `pre` above).
     const isBlock = !!className?.startsWith("language-");
-    const lang = className?.replace("language-", "") ?? "";
-    if (isBlock) return <pre data-lang={lang || undefined}><code>{children}</code></pre>;
+    if (isBlock) {
+      const { lang, filename } = parseLangSpec(className);
+      const code = childrenToString(children).replace(/\n$/, "");
+      return <CodeBlock code={code} lang={lang} filename={filename} streaming={streaming} />;
+    }
     return <code className={className}>{children}</code>;
   },
   p: ({ children }) => <p>{children}</p>,
@@ -630,7 +667,8 @@ const MD: React.ComponentProps<typeof ReactMarkdown>["components"] = {
 
     <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} className="msg-attachment-img" style={{ display: "block", marginTop: 8 }} />
   ),
-};
+  };
+}
 
 type Props = {
   role: "user" | "assistant" | "system";
@@ -674,6 +712,10 @@ export function MessageBubble({
   onReroll, variants, /* reroll-feature */
 }: Props) {
   const isUser = role === "user";
+  // Streaming-aware markdown component map. Code blocks defer Shiki tokenization
+  // until streaming completes, then swap in highlighted HTML.
+  const isStreaming = !!streaming && !isUser;
+  const md = useMemo(() => buildMD(isStreaming), [isStreaming]);
   /* edit-feature: inline edit state for user messages */
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(text);
@@ -915,7 +957,7 @@ export function MessageBubble({
                         const smoothThis = !!streaming && !isUser && isLastTextPart;
                         return (
                           <div key={i} style={i > 0 ? { marginTop: 8 } : undefined}>
-                            <StreamingMarkdown text={partText} streaming={smoothThis} components={MD} />
+                            <StreamingMarkdown text={partText} streaming={smoothThis} components={md} />
                           </div>
                         );
                       })}
@@ -924,7 +966,7 @@ export function MessageBubble({
                 ) : (
 
                   cleanText.trim() ? (
-                    <StreamingMarkdown text={cleanText} streaming={!!streaming && !isUser} components={MD} />
+                    <StreamingMarkdown text={cleanText} streaming={!!streaming && !isUser} components={md} />
                   ) : null
                 )}
 

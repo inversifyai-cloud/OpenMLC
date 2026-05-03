@@ -690,6 +690,131 @@
 }
 .text pre code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
 
+/* ── CodeBlock (Phase 1: Code Block Renaissance) ──────────────────────── */
+.code-block {
+  margin: 14px 0;
+  border: 1px solid var(--stroke-1);
+  border-radius: var(--r-2);
+  background: var(--bg-sunken);
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--fg-1);
+}
+.code-block__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 12px;
+  background: color-mix(in oklch, var(--bg-sunken) 60%, var(--bg-canvas));
+  border-bottom: 1px solid var(--stroke-1);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-4);
+}
+.code-block__lang {
+  font-weight: 500;
+  user-select: none;
+}
+.code-block__filename {
+  color: var(--fg-3);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+}
+.code-block__filename::before { content: "·"; margin: 0 6px; opacity: 0.5; }
+.code-block__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.code-block__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-1);
+  color: var(--fg-3);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+.code-block__btn:hover {
+  background: color-mix(in oklch, var(--fg-1) 6%, transparent);
+  color: var(--fg-1);
+  border-color: var(--stroke-1);
+}
+.code-block__btn.is-active {
+  background: color-mix(in oklch, var(--fg-accent) 12%, transparent);
+  color: var(--fg-accent);
+  border-color: color-mix(in oklch, var(--fg-accent) 35%, transparent);
+}
+.code-block__copy.is-copied {
+  color: var(--green-500, #22c55e);
+  border-color: color-mix(in oklch, var(--green-500, #22c55e) 35%, transparent);
+  background: color-mix(in oklch, var(--green-500, #22c55e) 10%, transparent);
+}
+.code-block__copy-label {
+  font-weight: 500;
+}
+.code-block__body {
+  margin: 0;
+  padding: 12px 14px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--fg-1);
+}
+/* Override the global ::before language badge so CodeBlock owns its chrome */
+.code-block .code-block__body[data-lang]::before { content: none; }
+.code-block__body code { font: inherit; color: inherit; background: none; border: 0; padding: 0; white-space: pre; }
+.code-block.is-wrap .code-block__body { overflow-x: visible; }
+.code-block.is-wrap .code-block__body,
+.code-block.is-wrap .code-block__body code,
+.code-block.is-wrap .code-block__body pre { white-space: pre-wrap; word-break: break-word; }
+.code-block__collapsed-hint {
+  padding: 10px 14px;
+  color: var(--fg-4);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  background: color-mix(in oklch, var(--bg-sunken) 70%, transparent);
+}
+
+/* Shiki output — themed pre/code lives inside __body--shiki */
+.code-block__body--shiki { padding: 0; }
+.code-block__body--shiki pre {
+  margin: 0;
+  padding: 12px 14px;
+  background: transparent !important;
+  border: 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.code-block.is-wrap .code-block__body--shiki pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+@media (prefers-reduced-motion: reduce) {
+  .code-block__btn,
+  .code-block__btn svg { transition: none !important; }
+}
+
 .cursor {
   display: inline-block;
   width: 7px;
