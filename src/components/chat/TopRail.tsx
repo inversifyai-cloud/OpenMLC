@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/chrome/ThemeToggle";
 import { HamburgerButton } from "@/components/chat/ChatShell";
 import { InboxBadge } from "@/components/inbox/InboxBadge";
-import { useFocusMode } from "@/hooks/use-focus-mode";
 
 const NAV_LINKS: Array<{ href: string; label: string }> = [
   { href: "/", label: "home" },
@@ -19,38 +18,11 @@ const NAV_LINKS: Array<{ href: string; label: string }> = [
 export function TopRail() {
   const pathname = usePathname();
   const inSettings = pathname?.startsWith("/settings");
-  const { level, cycle } = useFocusMode();
 
   function isActive(href: string): boolean {
     if (!pathname) return false;
     if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(href + "/");
-  }
-
-  function getFocusIcon() {
-    switch (level) {
-      case "default":
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3" />
-          </svg>
-        );
-      case "focus":
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <rect x="5" y="2" width="14" height="20" rx="2" />
-            <line x1="2" y1="6" x2="22" y2="6" />
-            <line x1="2" y1="18" x2="22" y2="18" />
-          </svg>
-        );
-      case "zen":
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <circle cx="12" cy="12" r="9" />
-            <path d="M9 10l-1-1M16 10l1-1M9 15c.5 1 1.5 2 3 2s2.5-1 3-2" />
-          </svg>
-        );
-    }
   }
 
   return (
@@ -76,15 +48,6 @@ export function TopRail() {
       <div className="topbar-right">
         <InboxBadge />
         <ThemeToggle className="ico-btn" />
-        <button
-          type="button"
-          className="focus-toggle-btn ico-btn"
-          onClick={cycle}
-          aria-label="toggle focus mode"
-          title="Focus mode (⌘.)"
-        >
-          {getFocusIcon()}
-        </button>
         <Link
           href={inSettings ? "/chat" : "/settings/api-keys"}
           className="ico-btn"

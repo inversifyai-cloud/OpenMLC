@@ -13,7 +13,6 @@ import { SwarmInlineView } from "@/components/swarm/SwarmInlineView";
 import { ArtifactsPane, type ArtifactData } from "./ArtifactsPane";
 import { EmptyState } from "./EmptyState";
 import { useSwarmStream } from "@/hooks/use-swarm-stream";
-import { useFocusMode } from "@/hooks/use-focus-mode";
 import { getModel } from "@/lib/providers/registry";
 import type { ChatMessage } from "@/types/chat";
 import { useScrollAnchor } from "@/hooks/use-scroll-anchor";
@@ -62,7 +61,6 @@ function dbToUiMessages(rows: ChatMessage[]): UIMessage[] {
 }
 
 export function ChatThread({ conversationId, initialModelId, initialTitle, initialSystemPrompt = "", initialPersonaId = null, initialMessages, supersededMessages = [], initialSelectedVariants = "{}", profile, flashMessageId = null }: Props) {
-  useFocusMode();
   const router = useRouter();
   const [modelId, setModelId] = useState(initialModelId);
   const [systemPrompt, setSystemPrompt] = useState(initialSystemPrompt);
