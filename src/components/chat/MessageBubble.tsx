@@ -15,6 +15,7 @@ import { useSmoothedText } from "@/hooks/use-smoothed-text";
 import { CodeBlock } from "./CodeBlock";
 import { ModelAvatar } from "./ModelAvatar";
 import { VariantPager } from "./VariantPager";
+import { StreamCursor } from "./StreamCursor";
 
 type MdComponents = React.ComponentProps<typeof ReactMarkdown>["components"];
 
@@ -1035,7 +1036,7 @@ export function MessageBubble({
 
                 {parts && <SourceChips parts={parts} />}
 
-                {streaming && <span className="cursor" />}
+                {streaming && <StreamCursor providerId={model?.providerId} />}
 
                 {!streaming && variants && variants.count > 1 && (
                   <VariantPager

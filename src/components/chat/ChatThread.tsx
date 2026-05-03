@@ -16,6 +16,9 @@ import { useSwarmStream } from "@/hooks/use-swarm-stream";
 import { useFocusMode } from "@/hooks/use-focus-mode";
 import { getModel } from "@/lib/providers/registry";
 import type { ChatMessage } from "@/types/chat";
+import { useScrollAnchor } from "@/hooks/use-scroll-anchor";
+import { NewTokensPeek } from "./NewTokensPeek";
+import { ContextMeter } from "./ContextMeter";
 
 const REASONING_EFFORT_KEY = "openmlc:reasoning-effort";
 
@@ -706,6 +709,13 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
       : `${Math.round(currentModel.contextWindow / 1000)}k`
     : null;
 
+  // Phase 8: Stream presence & context awareness
+  const { atBottom, hiddenLines, scrollToBottom } = useScrollAnchor(scrollerRef);
+
+  // Estimate tokens used: rough approximation (chars / 4 ≈ tokens)
+  const estimatedTokens = Math.ceil(JSON.stringify(messages).length / 4);
+  const contextWindow = currentModel?.contextWindow ?? 32000;
+
   return (
     <main className="main">
         <SelectionChips />
@@ -902,7 +912,15 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
               </div>
             </div>
           )}
+
+          <NewTokensPeek
+            visible={isStreaming && !atBottom}
+            hiddenLines={hiddenLines}
+            onClick={scrollToBottom}
+          />
         </div>
+
+        <ContextMeter used={estimatedTokens} total={contextWindow} />
 
         <ChatComposer
           modelId={modelId}

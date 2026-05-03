@@ -3517,6 +3517,8 @@
   .stream-cursor { animation: none !important; opacity: 1; }
   .new-tokens-peek { transition: none !important; }
   .context-meter__fill { transition: none !important; }
+}
+
 /* ── Phase 6: Composer Charm ─────────────────── */
 
 /* Drop overlay */
