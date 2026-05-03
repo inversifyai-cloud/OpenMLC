@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 type FocusLevel = "default" | "focus" | "zen";
 
@@ -8,115 +8,86 @@ function isFocusLevel(v: unknown): v is FocusLevel {
   return v === "default" || v === "focus" || v === "zen";
 }
 
-function loadFocusMode(): FocusLevel {
-  if (typeof window === "undefined") return "default";
-  try {
-    const raw = localStorage.getItem("openmlc:focus-mode");
-    if (raw && isFocusLevel(raw)) return raw;
-  } catch {}
-  return "default";
+// ── Module-level singleton store ──────────────────────────────────────────
+// All hook instances share one level value + one set of event listeners.
+// This prevents the race where two mounted instances (TopRail + ChatThread)
+// overwrite each other's data-focus attribute on every re-render.
+
+let _level: FocusLevel = "default";
+let _listeners: Set<(l: FocusLevel) => void> = new Set();
+let _keyHandlerMounted = false;
+
+function _applyLevel(level: FocusLevel) {
+  _level = level;
+  if (typeof window !== "undefined") {
+    try { localStorage.setItem("openmlc:focus-mode", level); } catch {}
+    document.documentElement.setAttribute("data-focus", level);
+  }
+  _listeners.forEach((fn) => fn(level));
 }
 
-export function useFocusMode() {
-  const [level, setLevel] = useState<FocusLevel>("default");
+function _cycle() {
+  _applyLevel(_level === "default" ? "focus" : _level === "focus" ? "zen" : "default");
+}
 
-  // Initialize from localStorage
-  useEffect(() => {
-    setLevel(loadFocusMode());
-  }, []);
+function _stepBack() {
+  _applyLevel(_level === "zen" ? "focus" : "default");
+}
 
-  // Persist to localStorage on change
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      localStorage.setItem("openmlc:focus-mode", level);
-    } catch {}
-  }, [level]);
-
-  // Set data-focus attribute on document root
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    document.documentElement.setAttribute("data-focus", level);
-  }, [level]);
-
-  // Global keyboard listener
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      const isMeta = e.metaKey || e.ctrlKey;
-
-      // Cmd/Ctrl+. cycles through levels
-      if (isMeta && e.key === ".") {
+function _mountKeyHandler() {
+  if (_keyHandlerMounted || typeof window === "undefined") return;
+  _keyHandlerMounted = true;
+  window.addEventListener("keydown", (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === ".") {
+      e.preventDefault();
+      _cycle();
+      return;
+    }
+    if (e.key === "Escape" && _level !== "default") {
+      const t = e.target as HTMLElement;
+      if (t.tagName !== "TEXTAREA" && t.tagName !== "INPUT" && t.contentEditable !== "true") {
         e.preventDefault();
-        setLevel((prev) => {
-          switch (prev) {
-            case "default":
-              return "focus";
-            case "focus":
-              return "zen";
-            case "zen":
-              return "default";
-          }
-        });
+        _stepBack();
       }
+    }
+  });
+}
 
-      // Escape steps back one level (but only if not in default)
-      if (e.key === "Escape" && level !== "default") {
-        // Don't fire if focus is on textarea/input/contenteditable
-        const target = e.target as HTMLElement;
-        const isEditable =
-          target.tagName === "TEXTAREA" ||
-          target.tagName === "INPUT" ||
-          target.contentEditable === "true";
-        if (!isEditable) {
-          e.preventDefault();
-          setLevel((prev) => {
-            switch (prev) {
-              case "zen":
-                return "focus";
-              case "focus":
-                return "default";
-              case "default":
-                return "default";
-            }
-          });
+// ── Hook ─────────────────────────────────────────────────────────────────
+export function useFocusMode() {
+  const [level, setLevel] = useState<FocusLevel>(_level);
+
+  useEffect(() => {
+    // Bootstrap from localStorage once
+    if (_level === "default") {
+      try {
+        const raw = localStorage.getItem("openmlc:focus-mode");
+        if (raw && isFocusLevel(raw) && raw !== "default") {
+          _applyLevel(raw);
         }
-      }
-    };
+      } catch {}
+    } else {
+      // Apply persisted level to the DOM in case this instance mounted late
+      document.documentElement.setAttribute("data-focus", _level);
+    }
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [level]);
+    // Subscribe
+    _listeners.add(setLevel);
+    // Sync local state to current store value
+    setLevel(_level);
+
+    // Mount the keyboard handler exactly once across all instances
+    _mountKeyHandler();
+
+    return () => {
+      _listeners.delete(setLevel);
+    };
+  }, []);
 
   return {
     level,
-    cycle: () => {
-      setLevel((prev) => {
-        switch (prev) {
-          case "default":
-            return "focus";
-          case "focus":
-            return "zen";
-          case "zen":
-            return "default";
-        }
-      });
-    },
-    stepBack: () => {
-      setLevel((prev) => {
-        switch (prev) {
-          case "zen":
-            return "focus";
-          case "focus":
-            return "default";
-          case "default":
-            return "default";
-        }
-      });
-    },
-    set: (newLevel: FocusLevel) => {
-      setLevel(newLevel);
-    },
+    cycle: _cycle,
+    stepBack: _stepBack,
+    set: _applyLevel,
   };
 }

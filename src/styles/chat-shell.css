@@ -9,7 +9,6 @@
   overflow: hidden;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
-  position: relative;
 }
 @media (min-width: 768px) {
   .chat-app {
@@ -3221,11 +3220,15 @@
  */
 
 @media (min-width: 768px) {
-  /* Focus: sidebar floats out of the grid, slides in on hover */
+  /*
+   * Focus: sidebar leaves the grid (position:fixed so overflow:hidden on
+   * .chat-app doesn't clip it) and slides in from the left on hover.
+   * .main gets grid-column:1/-1 to fill the vacated 240px column.
+   */
   :root[data-focus="focus"] .sidebar {
-    position: absolute;
+    position: fixed;
     left: 0;
-    top: 40px; /* below 40px topbar row */
+    top: 40px;
     height: calc(100dvh - 40px);
     width: 240px;
     z-index: 30;
@@ -3240,32 +3243,18 @@
     box-shadow: 8px 0 32px -4px oklch(0 0 0 / 0.22);
   }
 
-  /* Hairline sliver on left edge to invite hover */
-  :root[data-focus="focus"] .chat-app::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 40px;
-    width: 4px;
-    height: calc(100dvh - 40px);
-    background: var(--fg-accent);
-    opacity: 0.35;
-    z-index: 31;
-    cursor: e-resize;
-  }
-
-  /* Main fills full width when sidebar is pulled out of flow */
+  /* Main fills full width when sidebar leaves the grid */
   :root[data-focus="focus"] .main,
   :root[data-focus="zen"] .main {
     grid-column: 1 / -1;
   }
 
-  /* Hide topbar nav in focus to tighten chrome */
+  /* Tighten the topbar in focus mode */
   :root[data-focus="focus"] .topbar-nav {
     display: none;
   }
 
-  /* Zen: topbar + sidebar fully gone, main fills entire viewport */
+  /* Zen: topbar + sidebar gone, main fills the whole grid */
   :root[data-focus="zen"] .topbar {
     display: none;
   }
