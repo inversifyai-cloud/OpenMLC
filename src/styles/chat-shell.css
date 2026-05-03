@@ -3230,3 +3230,93 @@
     display: none;
   }
 }
+
+/* ── Phase 3: Focus / Zen Mode ─────────────────── */
+
+/* Focus level — chrome compresses */
+:root[data-focus="focus"] .sidebar {
+  transform: translateX(-100%);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-focus="focus"] .sidebar:hover,
+:root[data-focus="focus"] .sidebar:focus-within {
+  transform: translateX(0);
+}
+
+/* Sliver to hover into */
+:root[data-focus="focus"] .sidebar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 8px;
+  height: 100%;
+  cursor: e-resize;
+}
+
+:root[data-focus="focus"] .topbar {
+  height: 28px;
+  font-size: 11px;
+}
+
+/* Right panel (artifacts pane) collapses too */
+:root[data-focus="focus"] .artifacts-pane {
+  transform: translateX(100%);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-focus="focus"] .artifacts-pane:hover {
+  transform: translateX(0);
+}
+
+/* Zen level — everything hides; only the thread + composer */
+:root[data-focus="zen"] .topbar,
+:root[data-focus="zen"] .sidebar,
+:root[data-focus="zen"] .artifacts-pane {
+  display: none;
+}
+
+:root[data-focus="zen"] .messages,
+:root[data-focus="zen"] .composer-wrap {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+:root[data-focus="zen"] .text {
+  line-height: 1.75;
+  font-size: 15.5px;
+}
+
+:root[data-focus="zen"] body {
+  background: color-mix(in oklch, var(--bg-app, var(--bg-canvas)) 96%, black);
+}
+
+/* Focus toggle button */
+.focus-toggle-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-1);
+  color: var(--fg-3);
+  cursor: pointer;
+  padding: 4px 6px;
+  transition: color 140ms ease, background 140ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.focus-toggle-btn:hover {
+  color: var(--fg-1);
+  background: color-mix(in oklch, var(--fg-1) 6%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-focus="focus"] .sidebar,
+  :root[data-focus="focus"] .artifacts-pane {
+    transition: none !important;
+  }
+}
