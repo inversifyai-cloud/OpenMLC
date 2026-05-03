@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { ModelPicker } from "./ModelPicker";
 import { MicButton } from "./MicButton";
 import { PersonaPicker } from "./PersonaPicker";
+import { DropOverlay } from "./DropOverlay";
+import { useDragDrop } from "@/hooks/use-drag-drop";
+import { useDraft } from "@/hooks/use-draft";
 import { isImage } from "@/lib/mime";
 import { getModel } from "@/lib/providers/registry";
 
@@ -91,6 +94,8 @@ export function ChatComposer({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const reasoningWrapRef = useRef<HTMLDivElement | null>(null);
   const [reasoningOpen, setReasoningOpen] = useState(false);
+  const { isDraggingOver } = useDragDrop({ onFiles: onFileSelect });
+  const { hasDraft, restore: restoreDraft } = useDraft(conversationId, input, onInputChange);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -136,13 +141,26 @@ export function ChatComposer({
   const placeholder = swarmMode
     ? "describe the question for the swarm · enter or ⌘↵ to dispatch"
     : "message · enter to send";
+  const sendButtonState = busy ? "sending" : "idle";
 
   const supportsReasoning = !!getModel(modelId)?.capabilities.includes("reasoning");
   const reasoningActive = reasoningEffort !== "off";
 
+  const charCount = input.length;
+  const charCountWarn = charCount > 16000 ? "red" : charCount > 8000 ? "amber" : undefined;
+
   return (
     <div className="composer-wrap">
+      <DropOverlay isDraggingOver={isDraggingOver} />
       <div className="composer">
+        {hasDraft && (
+          <div className="draft-toast">
+            <span>Draft restored</span>
+            <button type="button" className="draft-toast__btn" onClick={restoreDraft}>
+              Restore
+            </button>
+          </div>
+        )}
         {pendingAttachments.length > 0 && (
           <div className="attachments-row">
             {pendingAttachments.map((att) => (
@@ -163,16 +181,24 @@ export function ChatComposer({
             ))}
           </div>
         )}
-        <div className="input-row">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={onKey}
-            placeholder={placeholder}
-            rows={1}
-            autoFocus
-          />
+        <div className="composer-area">
+          <div className="input-row">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => onInputChange(e.target.value)}
+              onKeyDown={onKey}
+              placeholder={placeholder}
+              rows={1}
+              autoFocus
+            />
+          </div>
+          <div className="composer-footer">
+            <span className="composer-hint">⏎ send · ⇧⏎ newline</span>
+            <span className="composer-counter" data-warn={charCountWarn}>
+              {charCount}
+            </span>
+          </div>
         </div>
         <div className="composer-tools">
           <ModelPicker value={modelId} onChange={onModelChange} />
@@ -358,7 +384,7 @@ export function ChatComposer({
           </button>
 
           {busy ? (
-            <button type="button" className="send-btn stop" onClick={onStop} aria-label="stop">
+            <button type="button" className="send-btn stop" onClick={onStop} data-state="stopping" aria-label="stop">
               <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden>
                 <rect x="3" y="3" width="6" height="6" rx="1" />
               </svg>
@@ -369,6 +395,7 @@ export function ChatComposer({
               className="send-btn"
               onClick={onSubmit}
               disabled={!canSend}
+              data-state={sendButtonState}
               aria-label="send"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
