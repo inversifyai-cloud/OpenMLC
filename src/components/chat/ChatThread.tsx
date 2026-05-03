@@ -11,6 +11,7 @@ import { SelectionChips } from "./SelectionChips";
 import { SystemPromptEditor } from "./SystemPromptEditor";
 import { SwarmInlineView } from "@/components/swarm/SwarmInlineView";
 import { ArtifactsPane, type ArtifactData } from "./ArtifactsPane";
+import { EmptyState } from "./EmptyState";
 import { useSwarmStream } from "@/hooks/use-swarm-stream";
 import { getModel } from "@/lib/providers/registry";
 import type { ChatMessage } from "@/types/chat";
@@ -724,10 +725,17 @@ export function ChatThread({ conversationId, initialModelId, initialTitle, initi
 
         <div className="messages" ref={scrollerRef}>
           {messages.length === 0 && (
-            <div className="empty-state">
-              <h1>say something</h1>
-              <p>your keys, your models, your machine.</p>
-            </div>
+            <EmptyState
+              modelLabel={currentModel?.name?.toLowerCase() ?? modelId}
+              personaLabel={null}
+              suggestions={[
+                "Explain a concept simply",
+                "Help me write something",
+                "Debug this code",
+                "Brainstorm with me",
+              ]}
+              onPickSuggestion={(text) => setInput(text)}
+            />
           )}
 
           {/* reroll-feature: hide assistant variants that aren't the

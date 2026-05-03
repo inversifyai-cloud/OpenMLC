@@ -3078,3 +3078,155 @@
 }
 .sysprompt-action:disabled { opacity: 0.45; cursor: not-allowed; }
 
+
+/* ── Phase 4: Empty State + Ambient ────────────────── */
+
+.empty-state-v2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.empty-state-v2__content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  pointer-events: all;
+}
+
+.empty-state-v2__greeting {
+  font-size: 32px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--fg-1);
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.empty-state-v2__accent-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.empty-state-v2__sub {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--fg-3);
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  margin: 0 0 32px 0;
+}
+
+.empty-state-v2__chips {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.empty-state-v2__chip {
+  padding: 12px 14px;
+  background: var(--surface-1, var(--bg-elevated));
+  border: 1px solid var(--stroke-1);
+  border-radius: var(--r-2);
+  color: var(--fg-2);
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+  transition:
+    border-color 180ms,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 0;
+  animation: staggered-chip 380ms ease-out forwards;
+}
+
+.empty-state-v2__chip:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.empty-state-v2__chip:nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.empty-state-v2__chip:nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.empty-state-v2__chip:nth-child(4) {
+  animation-delay: 180ms;
+}
+
+.empty-state-v2__chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--fg-accent);
+}
+
+.empty-state-v2__chip:focus-visible {
+  outline: 2px solid var(--stroke-focus);
+  outline-offset: 2px;
+}
+
+@keyframes staggered-chip {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ambient-orb {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambient-orb__blob {
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(
+    closest-side,
+    oklch(0.65 0.18 var(--orb-hue) / 0.28),
+    transparent
+  );
+  will-change: transform;
+  transition: none;
+}
+
+.empty-state-v2__noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: overlay;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-state-v2__chip {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .ambient-orb {
+    display: none;
+  }
+}
