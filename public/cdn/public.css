@@ -1,0 +1,454 @@
+/* ============================================================
+ * openmlc — public theme
+ * ------------------------------------------------------------
+ * Minimalist, sharp-edged, ink-on-paper. Drop into any page:
+ *
+ *   <link rel="stylesheet" href="https://your-host/cdn/public.css">
+ *
+ * Toggle theme by setting [data-theme="light"] or [data-theme="dark"]
+ * on <html>. Without it, the system preference wins.
+ *
+ * Free to copy / fork. License: MIT.
+ * ============================================================ */
+
+:root {
+  /* ── Brand: green accent only ──────────────────────────── */
+  --omlc-green-100: #DCFCE7;
+  --omlc-green-300: #4ADE80;
+  --omlc-green-400: #22C55E;
+  --omlc-green-500: #16A34A;
+  --omlc-green-600: #15803D;
+
+  /* ── Ink scale: monochrome with a faint warm cast ──────── */
+  --omlc-ink-0:   #FFFFFF;
+  --omlc-ink-50:  #FAFAF7;
+  --omlc-ink-100: #F4F3EE;
+  --omlc-ink-200: #E8E6DF;
+  --omlc-ink-300: #C9C7BF;
+  --omlc-ink-400: #8E8C84;
+  --omlc-ink-500: #5E5C56;
+  --omlc-ink-600: #3F3E3A;
+  --omlc-ink-700: #2A2926;
+  --omlc-ink-800: #1A1A18;
+  --omlc-ink-900: #0E0F0C;
+  --omlc-ink-950: #07080A;
+
+  /* ── Signal ────────────────────────────────────────────── */
+  --omlc-signal-ok:   #16A34A;
+  --omlc-signal-warn: #D97706;
+  --omlc-signal-err:  #DC2626;
+  --omlc-signal-info: #16A34A;
+
+  /* ── Spacing (4px grid, named by step) ─────────────────── */
+  --omlc-s-0:  0;     --omlc-s-1: 2px;  --omlc-s-2: 4px;
+  --omlc-s-3:  8px;   --omlc-s-4: 12px; --omlc-s-5: 16px;
+  --omlc-s-6:  20px;  --omlc-s-7: 24px; --omlc-s-8: 32px;
+  --omlc-s-9:  40px;  --omlc-s-10: 48px; --omlc-s-11: 64px;
+  --omlc-s-12: 80px;  --omlc-s-13: 96px; --omlc-s-14: 128px;
+
+  /* ── Radii (deliberately small — sharp edges) ──────────── */
+  --omlc-r-0:    0;
+  --omlc-r-1:    2px;
+  --omlc-r-2:    3px;
+  --omlc-r-3:    4px;
+  --omlc-r-4:    6px;
+  --omlc-r-5:    8px;
+  --omlc-r-6:    10px;
+  --omlc-r-7:    12px;
+  --omlc-r-full: 9999px;
+
+  /* ── Border weights ────────────────────────────────────── */
+  --omlc-bw-hair: 0.5px;
+  --omlc-bw-1:    1px;
+  --omlc-bw-2:    2px;
+
+  /* ── Motion ────────────────────────────────────────────── */
+  --omlc-ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --omlc-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --omlc-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --omlc-dur-1: 100ms;
+  --omlc-dur-2: 180ms;
+  --omlc-dur-3: 320ms;
+  --omlc-dur-4: 600ms;
+  --omlc-dur-5: 1000ms;
+
+  /* ── Type families ─────────────────────────────────────── */
+  --omlc-font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Helvetica Neue", system-ui, sans-serif;
+  --omlc-font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ── Type scale ────────────────────────────────────────── */
+  --omlc-t-micro:   11px;
+  --omlc-t-caption: 12px;
+  --omlc-t-small:   13px;
+  --omlc-t-body:    14px;
+  --omlc-t-lead:    16px;
+  --omlc-t-h6:      18px;
+  --omlc-t-h5:      22px;
+  --omlc-t-h4:      28px;
+  --omlc-t-h3:      36px;
+  --omlc-t-h2:      48px;
+  --omlc-t-h1:      64px;
+
+  --omlc-w-light:   300;
+  --omlc-w-regular: 400;
+  --omlc-w-medium:  500;
+  --omlc-w-semi:    600;
+  --omlc-w-bold:    700;
+
+  --omlc-lh-tight:  1.05;
+  --omlc-lh-snug:   1.2;
+  --omlc-lh-normal: 1.5;
+  --omlc-lh-loose:  1.7;
+
+  --omlc-tr-tight:    -0.02em;
+  --omlc-tr-normal:    0;
+  --omlc-tr-wide:      0.04em;
+  --omlc-tr-mono-hud:  0.10em;
+}
+
+/* ── Light theme (default) ───────────────────────────────── */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --omlc-bg-app:      #F4F3EE;
+  --omlc-bg-canvas:   #FAFAF7;
+  --omlc-bg-sunken:   #ECEAE3;
+  --omlc-bg-elevated: #FFFFFF;
+
+  --omlc-fg-1:      #0E0F0C;
+  --omlc-fg-2:      #2A2926;
+  --omlc-fg-3:      #5E5C56;
+  --omlc-fg-4:      #8E8C84;
+  --omlc-fg-accent: #16A34A;
+
+  --omlc-stroke-1:     rgba(14, 15, 12, 0.08);
+  --omlc-stroke-2:     rgba(14, 15, 12, 0.14);
+  --omlc-stroke-3:     rgba(14, 15, 12, 0.24);
+  --omlc-stroke-focus: #16A34A;
+
+  --omlc-surface-1:        #FFFFFF;
+  --omlc-surface-2:        #F4F3EE;
+  --omlc-surface-hover:    rgba(14, 15, 12, 0.04);
+  --omlc-surface-press:    rgba(14, 15, 12, 0.08);
+  --omlc-surface-selected: rgba(22, 163, 74, 0.06);
+
+  --omlc-shadow-1: 0 1px 0 rgba(14, 15, 12, 0.04);
+  --omlc-shadow-2: 0 1px 2px rgba(14, 15, 12, 0.06), 0 0 0 1px rgba(14, 15, 12, 0.04);
+  --omlc-shadow-3: 0 4px 12px rgba(14, 15, 12, 0.10), 0 0 0 1px rgba(14, 15, 12, 0.06);
+  --omlc-shadow-4: 0 12px 32px rgba(14, 15, 12, 0.16), 0 0 0 1px rgba(14, 15, 12, 0.08);
+
+  --omlc-selection: rgba(22, 163, 74, 0.20);
+}
+
+/* ── Dark theme ──────────────────────────────────────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --omlc-bg-app:      #0E0F0C;
+  --omlc-bg-canvas:   #15161A;
+  --omlc-bg-sunken:   #07080A;
+  --omlc-bg-elevated: #1A1B1F;
+
+  --omlc-fg-1:      #F4F3EE;
+  --omlc-fg-2:      #C9C7BF;
+  --omlc-fg-3:      #8E8C84;
+  --omlc-fg-4:      #5E5C56;
+  --omlc-fg-accent: #22C55E;
+
+  --omlc-stroke-1:     rgba(244, 243, 238, 0.08);
+  --omlc-stroke-2:     rgba(244, 243, 238, 0.14);
+  --omlc-stroke-3:     rgba(244, 243, 238, 0.24);
+  --omlc-stroke-focus: #22C55E;
+
+  --omlc-surface-1:        #1A1B1F;
+  --omlc-surface-2:        #232428;
+  --omlc-surface-hover:    rgba(244, 243, 238, 0.05);
+  --omlc-surface-press:    rgba(244, 243, 238, 0.10);
+  --omlc-surface-selected: rgba(34, 197, 94, 0.10);
+
+  --omlc-shadow-1: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --omlc-shadow-2: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --omlc-shadow-3: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --omlc-shadow-4: 0 12px 32px rgba(0, 0, 0, 0.7);
+
+  --omlc-selection: rgba(34, 197, 94, 0.30);
+}
+
+/* System preference (only when no explicit data-theme) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --omlc-bg-app:      #0E0F0C;
+    --omlc-bg-canvas:   #15161A;
+    --omlc-bg-sunken:   #07080A;
+    --omlc-bg-elevated: #1A1B1F;
+
+    --omlc-fg-1:      #F4F3EE;
+    --omlc-fg-2:      #C9C7BF;
+    --omlc-fg-3:      #8E8C84;
+    --omlc-fg-4:      #5E5C56;
+    --omlc-fg-accent: #22C55E;
+
+    --omlc-stroke-1:     rgba(244, 243, 238, 0.08);
+    --omlc-stroke-2:     rgba(244, 243, 238, 0.14);
+    --omlc-stroke-3:     rgba(244, 243, 238, 0.24);
+    --omlc-stroke-focus: #22C55E;
+
+    --omlc-surface-1:        #1A1B1F;
+    --omlc-surface-2:        #232428;
+    --omlc-surface-hover:    rgba(244, 243, 238, 0.05);
+    --omlc-surface-press:    rgba(244, 243, 238, 0.10);
+    --omlc-surface-selected: rgba(34, 197, 94, 0.10);
+
+    --omlc-shadow-1: 0 1px 0 rgba(0, 0, 0, 0.4);
+    --omlc-shadow-2: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --omlc-shadow-3: 0 4px 12px rgba(0, 0, 0, 0.6);
+    --omlc-shadow-4: 0 12px 32px rgba(0, 0, 0, 0.7);
+
+    --omlc-selection: rgba(34, 197, 94, 0.30);
+  }
+}
+
+/* ============================================================
+ * Baseline — opt out by scoping styles inside .omlc-scope only
+ * if you don't want a global reset.
+ * ============================================================ */
+
+.omlc, html.omlc-scope, [data-omlc] {
+  font-family: var(--omlc-font-sans);
+  font-size: var(--omlc-t-body);
+  line-height: var(--omlc-lh-normal);
+  color: var(--omlc-fg-1);
+  background: var(--omlc-bg-app);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.omlc *,
+.omlc *::before,
+.omlc *::after,
+[data-omlc] *,
+[data-omlc] *::before,
+[data-omlc] *::after {
+  box-sizing: border-box;
+}
+
+.omlc h1, .omlc h2, .omlc h3, .omlc h4, .omlc h5, .omlc h6 {
+  font-family: var(--omlc-font-sans);
+  font-weight: var(--omlc-w-semi);
+  letter-spacing: var(--omlc-tr-tight);
+  line-height: var(--omlc-lh-tight);
+  color: var(--omlc-fg-1);
+  margin: 0;
+}
+.omlc h1 { font-size: var(--omlc-t-h1); }
+.omlc h2 { font-size: var(--omlc-t-h2); }
+.omlc h3 { font-size: var(--omlc-t-h3); }
+.omlc h4 { font-size: var(--omlc-t-h4); }
+.omlc h5 { font-size: var(--omlc-t-h5); }
+.omlc h6 { font-size: var(--omlc-t-h6); letter-spacing: var(--omlc-tr-normal); }
+
+.omlc p     { margin: 0; line-height: var(--omlc-lh-normal); color: var(--omlc-fg-2); }
+.omlc small { font-size: var(--omlc-t-caption); color: var(--omlc-fg-3); }
+.omlc a     { color: var(--omlc-fg-accent); text-decoration: underline; text-underline-offset: 3px; }
+.omlc a:hover { color: var(--omlc-green-400); }
+
+.omlc code, .omlc kbd, .omlc samp, .omlc pre {
+  font-family: var(--omlc-font-mono);
+  font-size: 0.92em;
+  font-feature-settings: "ss01", "ss02", "calt";
+}
+.omlc code {
+  background: var(--omlc-bg-sunken);
+  border: 1px solid var(--omlc-stroke-1);
+  padding: 0.05em 0.35em;
+  border-radius: var(--omlc-r-1);
+  color: var(--omlc-fg-2);
+}
+.omlc kbd {
+  font-size: var(--omlc-t-micro);
+  background: var(--omlc-surface-2);
+  border: 1px solid var(--omlc-stroke-2);
+  border-bottom-width: 2px;
+  border-radius: var(--omlc-r-1);
+  padding: 1px 5px;
+  color: var(--omlc-fg-2);
+}
+.omlc pre {
+  background: var(--omlc-bg-sunken);
+  border: 1px solid var(--omlc-stroke-1);
+  border-radius: var(--omlc-r-3);
+  padding: var(--omlc-s-4) var(--omlc-s-5);
+  overflow-x: auto;
+  color: var(--omlc-fg-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.omlc pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.omlc :focus-visible {
+  outline: 2px solid var(--omlc-stroke-focus);
+  outline-offset: 1px;
+  border-radius: var(--omlc-r-1);
+}
+
+.omlc ::selection,
+.omlc *::selection { background: var(--omlc-selection); color: var(--omlc-fg-1); }
+
+/* ============================================================
+ * Components — opt-in classes. Prefix `omlc-`.
+ * ============================================================ */
+
+/* Eyebrow / HUD label */
+.omlc-hud {
+  font-family: var(--omlc-font-mono);
+  font-size: var(--omlc-t-micro);
+  letter-spacing: var(--omlc-tr-mono-hud);
+  text-transform: uppercase;
+  color: var(--omlc-fg-3);
+  font-weight: var(--omlc-w-medium);
+}
+
+/* Buttons */
+.omlc-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--omlc-s-2);
+  padding: 8px 14px;
+  font: inherit;
+  font-size: var(--omlc-t-small);
+  font-weight: var(--omlc-w-medium);
+  color: var(--omlc-fg-1);
+  background: var(--omlc-surface-1);
+  border: 1px solid var(--omlc-stroke-2);
+  border-radius: var(--omlc-r-1);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--omlc-dur-2) var(--omlc-ease-out),
+    border-color var(--omlc-dur-2) var(--omlc-ease-out),
+    color var(--omlc-dur-2) var(--omlc-ease-out),
+    transform var(--omlc-dur-1) var(--omlc-ease-out);
+}
+.omlc-btn:hover { background: var(--omlc-surface-hover); border-color: var(--omlc-stroke-3); }
+.omlc-btn:active { transform: translateY(1px); background: var(--omlc-surface-press); }
+.omlc-btn[disabled],
+.omlc-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.omlc-btn--primary {
+  background: var(--omlc-fg-accent);
+  border-color: var(--omlc-fg-accent);
+  color: #FAFAF7;
+}
+.omlc-btn--primary:hover { background: var(--omlc-green-600); border-color: var(--omlc-green-600); }
+
+.omlc-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--omlc-fg-2);
+}
+.omlc-btn--ghost:hover { background: var(--omlc-surface-hover); color: var(--omlc-fg-1); }
+
+/* Inputs */
+.omlc-input,
+.omlc-textarea {
+  width: 100%;
+  display: block;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: var(--omlc-t-small);
+  color: var(--omlc-fg-1);
+  background: var(--omlc-surface-1);
+  border: 1px solid var(--omlc-stroke-2);
+  border-radius: var(--omlc-r-1);
+  caret-color: var(--omlc-fg-accent);
+  transition:
+    border-color var(--omlc-dur-2) var(--omlc-ease-out),
+    box-shadow var(--omlc-dur-2) var(--omlc-ease-out);
+}
+.omlc-input::placeholder,
+.omlc-textarea::placeholder { color: var(--omlc-fg-4); }
+.omlc-input:focus,
+.omlc-textarea:focus {
+  outline: 0;
+  border-color: var(--omlc-fg-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--omlc-fg-accent) 18%, transparent);
+}
+.omlc-textarea { resize: vertical; min-height: 80px; line-height: var(--omlc-lh-normal); }
+
+/* Cards / panels */
+.omlc-card {
+  background: var(--omlc-surface-1);
+  border: 1px solid var(--omlc-stroke-1);
+  border-radius: var(--omlc-r-3);
+  padding: var(--omlc-s-6) var(--omlc-s-6);
+}
+.omlc-card--sunken {
+  background: var(--omlc-bg-sunken);
+  border-color: var(--omlc-stroke-1);
+}
+
+/* Chips / pills (rectangle, not pill — keeps the sharp aesthetic) */
+.omlc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--omlc-s-2);
+  padding: 2px 8px;
+  font-family: var(--omlc-font-mono);
+  font-size: var(--omlc-t-micro);
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: var(--omlc-fg-3);
+  background: var(--omlc-surface-2);
+  border: 1px solid var(--omlc-stroke-1);
+  border-radius: var(--omlc-r-1);
+}
+.omlc-chip--accent {
+  color: var(--omlc-fg-accent);
+  border-color: color-mix(in srgb, var(--omlc-fg-accent) 30%, transparent);
+  background: color-mix(in srgb, var(--omlc-fg-accent) 6%, transparent);
+}
+
+/* Hairline divider */
+.omlc-rule {
+  height: 1px;
+  background: var(--omlc-stroke-1);
+  border: 0;
+  margin: var(--omlc-s-5) 0;
+}
+
+/* Container */
+.omlc-container {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 var(--omlc-s-5);
+}
+
+/* Tag — for inline meta */
+.omlc-tag {
+  font-family: var(--omlc-font-mono);
+  font-size: var(--omlc-t-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--omlc-fg-4);
+}
+
+/* ============================================================
+ * Reduced motion
+ * ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .omlc-btn,
+  .omlc-input,
+  .omlc-textarea {
+    transition: none !important;
+  }
+}
